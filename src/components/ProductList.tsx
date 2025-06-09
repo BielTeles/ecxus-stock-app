@@ -1,17 +1,77 @@
 'use client'
 
 import { useState } from 'react'
-import { Edit, Trash2, MapPin, Package, Filter, Eye } from 'lucide-react'
+import { Edit, Trash2, MapPin, Package, Filter, Eye, Copy } from 'lucide-react'
 import { useProducts, Product } from '@/contexts/ProductContext'
+import EditProductModal from './EditProductModal'
+import ConfirmDeleteModal from './ConfirmDeleteModal'
+import ProductDetailsModal from './ProductDetailsModal'
 
 interface ProductListProps {
   searchTerm: string
 }
 
 export default function ProductList({ searchTerm }: ProductListProps) {
-  const { products } = useProducts()
+  const { products, addProduct, deleteProduct } = useProducts()
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState('name')
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null)
+  const [viewingProduct, setViewingProduct] = useState<Product | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+
+  // Funções de manipulação
+  const handleViewProduct = (product: Product) => {
+    setViewingProduct(product)
+    setIsDetailsModalOpen(true)
+  }
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product)
+    setIsEditModalOpen(true)
+  }
+
+  const handleDeleteProduct = (product: Product) => {
+    setDeletingProduct(product)
+    setIsDeleteModalOpen(true)
+  }
+
+  const handleDuplicateProduct = (product: Product) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id, ...productWithoutId } = product
+    const duplicatedProduct = {
+      ...productWithoutId,
+      name: `${product.name} (Cópia)`,
+      code: `${product.code}-COPY`,
+      quantity: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    addProduct(duplicatedProduct)
+  }
+
+  const confirmDeleteProduct = () => {
+    if (deletingProduct) {
+      deleteProduct(deletingProduct.id)
+    }
+  }
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false)
+    setEditingProduct(null)
+  }
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false)
+    setDeletingProduct(null)
+  }
+
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false)
+    setViewingProduct(null)
+  }
 
   const categories = ['all', ...Array.from(new Set(products.map(p => p.category)))]
 
@@ -135,14 +195,33 @@ export default function ProductList({ searchTerm }: ProductListProps) {
 
                   <div className="flex items-center justify-between">
                     <p className="text-xs text-gray-500">{product.supplier}</p>
-                    <div className="flex space-x-2">
-                      <button className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
+                    <div className="flex space-x-1">
+                      <button 
+                        onClick={() => handleViewProduct(product)}
+                        className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
+                        title="Ver detalhes"
+                      >
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
+                      <button 
+                        onClick={() => handleDuplicateProduct(product)}
+                        className="p-2 text-gray-400 hover:text-green-600 transition-colors"
+                        title="Duplicar produto"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleEditProduct(product)}
+                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Editar produto"
+                      >
                         <Edit className="h-4 w-4" />
                       </button>
-                      <button className="p-2 text-gray-400 hover:text-red-600 transition-colors">
+                      <button 
+                        onClick={() => handleDeleteProduct(product)}
+                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Excluir produto"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
@@ -161,6 +240,26 @@ export default function ProductList({ searchTerm }: ProductListProps) {
           <p className="text-sm text-gray-400 mt-1">Tente ajustar os filtros ou termo de busca</p>
         </div>
       )}
+
+      {/* Modais */}
+      <EditProductModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        product={editingProduct}
+      />
+      
+      <ConfirmDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={confirmDeleteProduct}
+        product={deletingProduct}
+      />
+
+      <ProductDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        product={viewingProduct}
+      />
     </div>
   )
 } 

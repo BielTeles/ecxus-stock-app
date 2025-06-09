@@ -1,19 +1,25 @@
 import { useState, useEffect } from 'react'
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
-  // Estado para armazenar o valor
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    if (typeof window === "undefined") {
-      return initialValue
+  // Estado para armazenar o valor, sempre inicializa com initialValue
+  const [storedValue, setStoredValue] = useState<T>(initialValue)
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  // Carrega os dados do localStorage após a hidratação
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const item = window.localStorage.getItem(key)
+        if (item) {
+          setStoredValue(JSON.parse(item))
+        }
+      } catch (error) {
+        console.error(`Erro ao carregar ${key} do localStorage:`, error)
+      } finally {
+        setIsInitialized(true)
+      }
     }
-    try {
-      const item = window.localStorage.getItem(key)
-      return item ? JSON.parse(item) : initialValue
-    } catch (error) {
-      console.error(`Erro ao carregar ${key} do localStorage:`, error)
-      return initialValue
-    }
-  })
+  }, [key])
 
   // Função para salvar no localStorage
   const setValue = (value: T | ((val: T) => T)) => {
@@ -28,5 +34,5 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     }
   }
 
-  return [storedValue, setValue] as const
+  return [storedValue, setValue, isInitialized] as const
 } 

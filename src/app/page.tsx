@@ -6,6 +6,9 @@ import ProductList from '@/components/ProductList'
 import AddProductModal from '@/components/AddProductModal'
 import Dashboard from '@/components/Dashboard'
 import SettingsTab from '@/components/SettingsTab'
+import NoSSR from '@/components/NoSSR'
+import DashboardSkeleton from '@/components/DashboardSkeleton'
+import ProductListSkeleton from '@/components/ProductListSkeleton'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -85,12 +88,18 @@ export default function Home() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'dashboard' && (
-          <Dashboard 
-            onAddProduct={() => setIsAddModalOpen(true)}
-            onSwitchToProducts={() => setActiveTab('products')}
-          />
+          <NoSSR fallback={<DashboardSkeleton />}>
+            <Dashboard 
+              onAddProduct={() => setIsAddModalOpen(true)}
+              onSwitchToProducts={() => setActiveTab('products')}
+            />
+          </NoSSR>
         )}
-        {activeTab === 'products' && <ProductList searchTerm={searchTerm} />}
+        {activeTab === 'products' && (
+          <NoSSR fallback={<ProductListSkeleton />}>
+            <ProductList searchTerm={searchTerm} />
+          </NoSSR>
+        )}
         {activeTab === 'alerts' && (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-4">Alertas de Estoque</h2>

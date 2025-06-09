@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Package, TrendingUp, AlertTriangle, DollarSign, BarChart3 } from 'lucide-react'
 import { useProducts } from '@/contexts/ProductContext'
 
@@ -10,12 +11,18 @@ interface DashboardProps {
 
 export default function Dashboard({ onAddProduct, onSwitchToProducts }: DashboardProps) {
   const { products } = useProducts()
+  const [isHydrated, setIsHydrated] = useState(false)
 
-  // Calcular estatísticas em tempo real
-  const totalProducts = products.length
-  const totalValue = products.reduce((sum, product) => sum + (product.quantity * product.price), 0)
-  const lowStockProducts = products.filter(p => p.quantity <= p.minStock).length
-  const recentProducts = products.slice(-5).reverse() // Últimos 5 produtos adicionados
+  // Evitar erro de hidratação - só calcular estatísticas após hidratação no cliente
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
+  // Calcular estatísticas em tempo real apenas após hidratação
+  const totalProducts = isHydrated ? products.length : 0
+  const totalValue = isHydrated ? products.reduce((sum, product) => sum + (product.quantity * product.price), 0) : 0
+  const lowStockProducts = isHydrated ? products.filter(p => p.quantity <= p.minStock).length : 0
+  const recentProducts = isHydrated ? products.slice(-5).reverse() : [] // Últimos 5 produtos adicionados
 
   const stats = [
     {
@@ -47,7 +54,7 @@ export default function Dashboard({ onAddProduct, onSwitchToProducts }: Dashboar
     },
     {
       title: 'Categorias',
-      value: new Set(products.map(p => p.category)).size.toString(),
+      value: isHydrated ? new Set(products.map(p => p.category)).size.toString() : '0',
       icon: TrendingUp,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100',
