@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, Package, MapPin, DollarSign, Hash, Building, FileText } from 'lucide-react'
+import { useProducts } from '@/contexts/ProductContext'
 
 interface AddProductModalProps {
   isOpen: boolean
@@ -9,6 +10,7 @@ interface AddProductModalProps {
 }
 
 export default function AddProductModal({ isOpen, onClose }: AddProductModalProps) {
+  const { addProduct } = useProducts()
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -36,10 +38,21 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Aqui você implementaria a lógica para salvar o produto
-    console.log('Produto adicionado:', formData)
-    onClose()
-    // Reset form
+    
+    // Adiciona o produto usando o contexto
+    addProduct({
+      name: formData.name,
+      code: formData.code,
+      category: formData.category,
+      location: formData.location,
+      quantity: parseInt(formData.quantity) || 0,
+      minStock: parseInt(formData.minStock) || 0,
+      price: parseFloat(formData.price) || 0,
+      supplier: formData.supplier,
+      description: formData.description
+    })
+    
+    // Reset form e fecha modal
     setFormData({
       name: '',
       code: '',
@@ -51,6 +64,7 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
       supplier: '',
       description: ''
     })
+    onClose()
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

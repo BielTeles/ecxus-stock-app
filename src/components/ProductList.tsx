@@ -2,102 +2,16 @@
 
 import { useState } from 'react'
 import { Edit, Trash2, MapPin, Package, Filter, Eye } from 'lucide-react'
-
-interface Product {
-  id: number
-  name: string
-  code: string
-  category: string
-  location: string
-  quantity: number
-  minStock: number
-  price: number
-  supplier: string
-  description: string
-}
+import { useProducts, Product } from '@/contexts/ProductContext'
 
 interface ProductListProps {
   searchTerm: string
 }
 
 export default function ProductList({ searchTerm }: ProductListProps) {
+  const { products } = useProducts()
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState('name')
-
-  const products: Product[] = [
-    {
-      id: 1,
-      name: 'Resistor 10kΩ',
-      code: 'R001',
-      category: 'Resistores',
-      location: 'A1-B3',
-      quantity: 500,
-      minStock: 100,
-      price: 0.15,
-      supplier: 'Eletrônica Silva',
-      description: 'Resistor de carbono 1/4W 5%'
-    },
-    {
-      id: 2,
-      name: 'Capacitor 100nF',
-      code: 'C001',
-      category: 'Capacitores',
-      location: 'A2-B1',
-      quantity: 25,
-      minStock: 50,
-      price: 0.25,
-      supplier: 'Componentes Tech',
-      description: 'Capacitor cerâmico 50V'
-    },
-    {
-      id: 3,
-      name: 'LED Azul 5mm',
-      code: 'L001',
-      category: 'LEDs',
-      location: 'B1-C2',
-      quantity: 200,
-      minStock: 75,
-      price: 0.30,
-      supplier: 'LED World',
-      description: 'LED de alto brilho 3.2V 20mA'
-    },
-    {
-      id: 4,
-      name: 'Arduino Uno R3',
-      code: 'ARD001',
-      category: 'Microcontroladores',
-      location: 'C3-A1',
-      quantity: 15,
-      minStock: 10,
-      price: 45.00,
-      supplier: 'Arduino Store',
-      description: 'Placa de desenvolvimento com ATmega328P'
-    },
-    {
-      id: 5,
-      name: 'Sensor PIR',
-      code: 'S001',
-      category: 'Sensores',
-      location: 'D1-B2',
-      quantity: 8,
-      minStock: 20,
-      price: 12.50,
-      supplier: 'Sensor Tech',
-      description: 'Sensor de movimento passivo infravermelho'
-    },
-    {
-      id: 6,
-      name: 'Transistor BC547',
-      code: 'T001',
-      category: 'Transistores',
-      location: 'A3-C1',
-      quantity: 300,
-      minStock: 50,
-      price: 0.20,
-      supplier: 'Eletrônica Silva',
-      description: 'Transistor NPN uso geral'
-    }
-  ]
 
   const categories = ['all', ...Array.from(new Set(products.map(p => p.category)))]
 

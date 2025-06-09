@@ -1,6 +1,7 @@
 'use client'
 
 import { Package, TrendingUp, AlertTriangle, DollarSign, BarChart3 } from 'lucide-react'
+import { useProducts } from '@/contexts/ProductContext'
 
 interface DashboardProps {
   onAddProduct: () => void
@@ -8,10 +9,18 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ onAddProduct, onSwitchToProducts }: DashboardProps) {
+  const { products } = useProducts()
+
+  // Calcular estatísticas em tempo real
+  const totalProducts = products.length
+  const totalValue = products.reduce((sum, product) => sum + (product.quantity * product.price), 0)
+  const lowStockProducts = products.filter(p => p.quantity <= p.minStock).length
+  const recentProducts = products.slice(-5).reverse() // Últimos 5 produtos adicionados
+
   const stats = [
     {
       title: 'Total de Produtos',
-      value: '1,234',
+      value: totalProducts.toLocaleString(),
       icon: Package,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
@@ -20,7 +29,7 @@ export default function Dashboard({ onAddProduct, onSwitchToProducts }: Dashboar
     },
     {
       title: 'Valor Total em Estoque',
-      value: 'R$ 45.678,90',
+      value: `R$ ${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: DollarSign,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
@@ -29,30 +38,22 @@ export default function Dashboard({ onAddProduct, onSwitchToProducts }: Dashboar
     },
     {
       title: 'Produtos em Baixa',
-      value: '23',
+      value: lowStockProducts.toString(),
       icon: AlertTriangle,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
-      change: '-5%',
-      changeType: 'decrease'
+      change: lowStockProducts > 0 ? '-5%' : '+100%',
+      changeType: lowStockProducts > 0 ? 'decrease' : 'increase'
     },
     {
-      title: 'Movimentações (Mês)',
-      value: '156',
+      title: 'Categorias',
+      value: new Set(products.map(p => p.category)).size.toString(),
       icon: TrendingUp,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100',
       change: '+15%',
       changeType: 'increase'
     }
-  ]
-
-  const recentProducts = [
-    { id: 1, name: 'Resistor 10kΩ', code: 'R001', location: 'A1-B3', quantity: 500, minStock: 100 },
-    { id: 2, name: 'Capacitor 100nF', code: 'C001', location: 'A2-B1', quantity: 25, minStock: 50 },
-    { id: 3, name: 'LED Azul 5mm', code: 'L001', location: 'B1-C2', quantity: 200, minStock: 75 },
-    { id: 4, name: 'Arduino Uno R3', code: 'ARD001', location: 'C3-A1', quantity: 15, minStock: 10 },
-    { id: 5, name: 'Sensor PIR', code: 'S001', location: 'D1-B2', quantity: 8, minStock: 20 }
   ]
 
   return (
