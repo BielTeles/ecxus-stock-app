@@ -2,6 +2,7 @@
 
 import { X, Package, MapPin, DollarSign, Hash, Building, FileText, Calendar, TrendingUp, AlertTriangle } from 'lucide-react'
 import { Product } from '@/contexts/ProductContext'
+import { useCurrency } from '@/hooks/useCurrency'
 
 interface ProductDetailsModalProps {
   isOpen: boolean
@@ -10,6 +11,8 @@ interface ProductDetailsModalProps {
 }
 
 export default function ProductDetailsModal({ isOpen, onClose, product }: ProductDetailsModalProps) {
+  const { formatCurrency } = useCurrency()
+  
   if (!isOpen || !product) return null
 
   const stockStatus = (() => {
@@ -138,15 +141,15 @@ export default function ProductDetailsModal({ isOpen, onClose, product }: Produc
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center">
                 <p className="text-sm text-gray-600">Preço Unitário</p>
-                <p className="text-xl font-bold text-green-600">R$ {product.price.toFixed(2)}</p>
+                <p className="text-xl font-bold text-green-600">{formatCurrency(product.price)}</p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-600">Valor Total em Estoque</p>
-                <p className="text-xl font-bold text-green-600">R$ {totalValue.toFixed(2)}</p>
+                <p className="text-xl font-bold text-green-600">{formatCurrency(totalValue)}</p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-600">Valor Estoque Mínimo</p>
-                <p className="text-lg font-semibold text-gray-700">R$ {(product.minStock * product.price).toFixed(2)}</p>
+                <p className="text-lg font-semibold text-gray-700">{formatCurrency(product.minStock * product.price)}</p>
               </div>
             </div>
           </div>

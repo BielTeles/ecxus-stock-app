@@ -37,7 +37,7 @@ export function useLocalStorage<T>(
         setIsInitialized(true)
       }
     }
-  }, [key]) // Removido initialValue das dependências para evitar loop infinito
+  }, [key, initialValue])
 
   // Função para salvar no localStorage
   const setValue = useCallback((value: T | ((val: T) => T)) => {

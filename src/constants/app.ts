@@ -6,6 +6,11 @@ export const APP_CONFIG = {
     keys: {
       products: 'ecxus-stock-products',
       finishedProducts: 'ecxus-stock-finished-products',
+      suppliers: 'ecxus-suppliers',
+      purchaseOrders: 'ecxus-purchase-orders',
+      quotes: 'ecxus-quotes',
+      priceHistory: 'ecxus-price-history',
+      stockAlerts: 'ecxus-stock-alerts',
       settings: 'ecxus-stock-settings',
       theme: 'ecxus-stock-theme'
     }

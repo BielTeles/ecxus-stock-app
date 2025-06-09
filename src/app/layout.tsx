@@ -4,6 +4,8 @@ import "./globals.css";
 import { ProductProvider } from "@/contexts/ProductContext";
 import { ProductionProvider } from "@/contexts/ProductionContext";
 import { ProductionOrderProvider } from "@/contexts/ProductionOrderContext";
+import { SupplierProvider } from "@/contexts/SupplierContext";
+import { SettingsProvider } from "@/contexts/SettingsContext";
 import DevInitializer from '@/components/DevInitializer';
 import DebugProducts from '@/components/DebugProducts';
 
@@ -32,14 +34,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ProductProvider>
-          <ProductionProvider>
-            <ProductionOrderProvider>
-              {children}
-            </ProductionOrderProvider>
-          </ProductionProvider>
-        </ProductProvider>
-        <DebugProducts />
+        <SettingsProvider>
+          <ProductProvider>
+            <SupplierProvider>
+              <ProductionProvider>
+                <ProductionOrderProvider>
+                  {children}
+                  <DebugProducts />
+                </ProductionOrderProvider>
+              </ProductionProvider>
+            </SupplierProvider>
+          </ProductProvider>
+        </SettingsProvider>
         <DevInitializer />
       </body>
     </html>

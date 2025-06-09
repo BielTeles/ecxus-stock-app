@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Package, TrendingUp, AlertTriangle, DollarSign, BarChart3 } from 'lucide-react'
 import { useProducts } from '@/contexts/ProductContext'
+import { useCurrency } from '@/hooks/useCurrency'
 
 interface DashboardProps {
   onAddProduct: () => void
@@ -11,6 +12,7 @@ interface DashboardProps {
 
 export default function Dashboard({ onAddProduct, onSwitchToProducts }: DashboardProps) {
   const { products } = useProducts()
+  const { formatCurrency } = useCurrency()
   const [isHydrated, setIsHydrated] = useState(false)
 
   // Evitar erro de hidratação - só calcular estatísticas após hidratação no cliente
@@ -36,7 +38,7 @@ export default function Dashboard({ onAddProduct, onSwitchToProducts }: Dashboar
     },
     {
       title: 'Valor Total em Estoque',
-      value: `R$ ${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      value: formatCurrency(totalValue),
       icon: DollarSign,
       color: 'text-green-600',
       bgColor: 'bg-green-100',

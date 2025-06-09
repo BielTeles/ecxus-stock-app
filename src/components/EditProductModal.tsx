@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { X, Package, MapPin, DollarSign, Hash, Building, FileText, Save } from 'lucide-react'
 import { useProducts, Product } from '@/contexts/ProductContext'
+import { useCurrency } from '@/hooks/useCurrency'
 
 interface EditProductModalProps {
   isOpen: boolean
@@ -12,6 +13,7 @@ interface EditProductModalProps {
 
 export default function EditProductModal({ isOpen, onClose, product }: EditProductModalProps) {
   const { updateProduct } = useProducts()
+  const { getCurrencySymbol } = useCurrency()
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -41,15 +43,15 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
   useEffect(() => {
     if (product) {
       setFormData({
-        name: product.name,
-        code: product.code,
-        category: product.category,
-        location: product.location,
-        quantity: product.quantity.toString(),
-        minStock: product.minStock.toString(),
-        price: product.price.toString(),
-        supplier: product.supplier,
-        description: product.description
+        name: product.name || '',
+        code: product.code || '',
+        category: product.category || '',
+        location: product.location || '',
+        quantity: (product.quantity || 0).toString(),
+        minStock: (product.minStock || 0).toString(),
+        price: (product.price || 0).toString(),
+        supplier: product.supplier || '',
+        description: product.description || ''
       })
     }
   }, [product])
@@ -224,7 +226,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <DollarSign className="h-4 w-4 inline mr-1" />
-                  Preço Unitário (R$) *
+                  Preço Unitário ({getCurrencySymbol()}) *
                 </label>
                 <input
                   type="number"

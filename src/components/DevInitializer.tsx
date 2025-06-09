@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Database, Cpu, Package, AlertCircle, CheckCircle } from 'lucide-react'
+import { APP_CONFIG } from '@/constants/app'
 
 // Dados de exemplo para desenvolvimento
 const seedDevData = () => {
@@ -97,11 +98,33 @@ const seedDevData = () => {
       code: 'CIRCUIT-LED-001',
       description: 'Circuito básico com LED e resistor limitador',
       category: 'MIXED',
-      estimated_time: 15,
-      sell_price: 5.00,
+      estimatedProductionTime: 15,
+      sellPrice: 5.00,
       status: 'ACTIVE',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      bom: [
+        {
+          id: 1,
+          componentId: 1, // Resistor 10K
+          quantity: 1,
+          process: 'SMD',
+          position: 'R1',
+          notes: 'Resistor limitador de corrente',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 2,
+          componentId: 3, // LED Verde
+          quantity: 1,
+          process: 'PTH',
+          position: 'D1',
+          notes: 'LED indicador principal',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     },
     {
       id: 2,
@@ -109,84 +132,167 @@ const seedDevData = () => {
       code: 'IOT-WIFI-001',
       description: 'Módulo IoT com ESP32, sensores e conectividade WiFi',
       category: 'SMD',
-      estimated_time: 45,
-      sell_price: 25.00,
+      estimatedProductionTime: 45,
+      sellPrice: 25.00,
       status: 'ACTIVE',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      bom: [
+        {
+          id: 3,
+          componentId: 4, // ESP32
+          quantity: 1,
+          process: 'SMD',
+          position: 'U1',
+          notes: 'Microcontrolador principal',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 4,
+          componentId: 2, // Capacitor 100nF
+          quantity: 3,
+          process: 'SMD',
+          position: 'C1,C2,C3',
+          notes: 'Capacitores de desacoplamento',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 5,
+          componentId: 5, // Conector USB-C
+          quantity: 1,
+          process: 'SMD',
+          position: 'J1',
+          notes: 'Conector de alimentação e dados',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
   ]
 
-  // BOM (Bill of Materials) exemplo
-  const sampleBomItems = [
-    // Para Circuito LED Simples
+  // Fornecedores exemplo
+  const sampleSuppliers = [
     {
       id: 1,
-      finished_product_id: 1,
-      component_id: 1, // Resistor 10K
-      quantity: 1,
-      process: 'SMD',
-      position: 'R1',
-      notes: 'Resistor limitador de corrente',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      name: 'Mouser Electronics',
+      code: 'MOUSER-001',
+      email: 'vendas@mouser.com.br',
+      phone: '+55 11 3003-6000',
+      website: 'https://www.mouser.com.br',
+      address: {
+        street: 'Rua Verbo Divino, 1356',
+        city: 'São Paulo',
+        state: 'SP',
+        zipCode: '04719-002',
+        country: 'Brasil'
+      },
+      contact: {
+        name: 'João Silva',
+        email: 'joao.silva@mouser.com.br',
+        phone: '+55 11 3003-6001',
+        department: 'Vendas'
+      },
+      commercialTerms: {
+        paymentTerms: '30 dias',
+        minOrderValue: 100.00,
+        shippingCost: 15.00,
+        leadTimeDays: 5,
+        currency: 'R$'
+      },
+      rating: 5,
+      status: 'ACTIVE',
+      notes: 'Fornecedor confiável com amplo catálogo de componentes eletrônicos',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     },
     {
       id: 2,
-      finished_product_id: 1,
-      component_id: 3, // LED Verde
-      quantity: 1,
-      process: 'PTH',
-      position: 'D1',
-      notes: 'LED indicador principal',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      name: 'Digikey Brasil',
+      code: 'DIGIKEY-001',
+      email: 'brasil@digikey.com',
+      phone: '+55 11 2626-8400',
+      website: 'https://www.digikey.com.br',
+      address: {
+        street: 'Av. das Nações Unidas, 12901',
+        city: 'São Paulo',
+        state: 'SP',
+        zipCode: '04578-000',
+        country: 'Brasil'
+      },
+      contact: {
+        name: 'Maria Santos',
+        email: 'maria.santos@digikey.com',
+        phone: '+55 11 2626-8401',
+        department: 'Atendimento ao Cliente'
+      },
+      commercialTerms: {
+        paymentTerms: '45 dias',
+        minOrderValue: 150.00,
+        shippingCost: 25.00,
+        leadTimeDays: 7,
+        currency: 'R$'
+      },
+      rating: 4,
+      status: 'ACTIVE',
+      notes: 'Excelente para componentes especializados e de alta qualidade',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     },
-    // Para Módulo WiFi IoT
     {
       id: 3,
-      finished_product_id: 2,
-      component_id: 4, // ESP32
-      quantity: 1,
-      process: 'SMD',
-      position: 'U1',
-      notes: 'Microcontrolador principal',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: 4,
-      finished_product_id: 2,
-      component_id: 2, // Capacitor 100nF
-      quantity: 3,
-      process: 'SMD',
-      position: 'C1,C2,C3',
-      notes: 'Capacitores de desacoplamento',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: 5,
-      finished_product_id: 2,
-      component_id: 5, // Conector USB-C
-      quantity: 1,
-      process: 'SMD',
-      position: 'J1',
-      notes: 'Conector de alimentação e dados',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      name: 'LCSC Electronics',
+      code: 'LCSC-001',
+      email: 'vendas@lcsc.com.br',
+      phone: '+55 11 4020-8000',
+      website: 'https://www.lcsc.com',
+      address: {
+        street: 'Rua Augusta, 2050',
+        city: 'São Paulo',
+        state: 'SP',
+        zipCode: '01305-100',
+        country: 'Brasil'
+      },
+      contact: {
+        name: 'Carlos Chen',
+        email: 'carlos.chen@lcsc.com.br',
+        phone: '+55 11 4020-8001',
+        department: 'Vendas Técnicas'
+      },
+      commercialTerms: {
+        paymentTerms: 'À vista',
+        minOrderValue: 50.00,
+        shippingCost: 12.00,
+        leadTimeDays: 10,
+        currency: 'R$'
+      },
+      rating: 3,
+      status: 'ACTIVE',
+      notes: 'Bons preços para componentes básicos, prazo de entrega mais longo',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
   ]
 
   // Salvar dados no localStorage (usando as chaves corretas do APP_CONFIG)
-  localStorage.setItem('ecxus-stock-products', JSON.stringify(sampleProducts))
-  localStorage.setItem('ecxus-stock-finished-products', JSON.stringify(sampleFinishedProducts))
-  localStorage.setItem('bom_items', JSON.stringify(sampleBomItems))
+  localStorage.setItem(APP_CONFIG.localStorage.keys.products, JSON.stringify(sampleProducts))
+  localStorage.setItem(APP_CONFIG.localStorage.keys.finishedProducts, JSON.stringify(sampleFinishedProducts))
+  localStorage.setItem(APP_CONFIG.localStorage.keys.suppliers, JSON.stringify(sampleSuppliers))
+  localStorage.setItem(APP_CONFIG.localStorage.keys.purchaseOrders, JSON.stringify([]))
+  localStorage.setItem(APP_CONFIG.localStorage.keys.quotes, JSON.stringify([]))
+  localStorage.setItem(APP_CONFIG.localStorage.keys.priceHistory, JSON.stringify([]))
+  localStorage.setItem(APP_CONFIG.localStorage.keys.stockAlerts, JSON.stringify([]))
   localStorage.setItem('production_orders', JSON.stringify([]))
   localStorage.setItem('mock-id-counter', '1010')
   localStorage.setItem('dev-data-initialized', 'true')
 
-  return { products: sampleProducts.length, finishedProducts: sampleFinishedProducts.length, bomItems: sampleBomItems.length }
+  return { 
+    products: sampleProducts.length, 
+    finishedProducts: sampleFinishedProducts.length, 
+    bomItems: sampleFinishedProducts.reduce((sum, p) => sum + p.bom.length, 0),
+    suppliers: sampleSuppliers.length 
+  }
 }
 
 export default function DevInitializer() {
@@ -194,38 +300,45 @@ export default function DevInitializer() {
   const [stats, setStats] = useState({ products: 0, finishedProducts: 0, bomItems: 0 })
 
   useEffect(() => {
-    // Verificar se já foi inicializado
-    const wasInitialized = localStorage.getItem('dev-data-initialized')
-    
-    if (!wasInitialized) {
-      // Inicializar dados de exemplo
-      const seedStats = seedDevData()
-      setStats(seedStats)
-      setIsInitialized(true)
-      console.log('🎯 Banco de dados de desenvolvimento inicializado!')
-    } else {
-      setIsInitialized(true)
+    // Só executar no browser
+    if (typeof window !== 'undefined') {
+      // Verificar se já foi inicializado
+      const wasInitialized = localStorage.getItem('dev-data-initialized')
+      
+      if (!wasInitialized) {
+        // Inicializar dados de exemplo
+        const seedStats = seedDevData()
+        setStats(seedStats)
+        setIsInitialized(true)
+        console.log('🎯 Banco de dados de desenvolvimento inicializado!')
+      } else {
+        setIsInitialized(true)
+      }
     }
   }, [])
 
   const handleResetData = () => {
-    // Limpar dados existentes
-    localStorage.clear()
-    
-    // Recriar dados de exemplo
-    const seedStats = seedDevData()
-    setStats(seedStats)
-    
-    // Recarregar a página para aplicar mudanças
-    window.location.reload()
+    if (typeof window !== 'undefined') {
+      // Limpar dados existentes
+      localStorage.clear()
+      
+      // Recriar dados de exemplo
+      const seedStats = seedDevData()
+      setStats(seedStats)
+      
+      // Recarregar a página para aplicar mudanças
+      window.location.reload()
+    }
   }
 
   const handleForceInit = () => {
-    // Forçar inicialização mesmo se já foi feita
-    localStorage.removeItem('dev-data-initialized')
-    const seedStats = seedDevData()
-    setStats(seedStats)
-    window.location.reload()
+    if (typeof window !== 'undefined') {
+      // Forçar inicialização mesmo se já foi feita
+      localStorage.removeItem('dev-data-initialized')
+      const seedStats = seedDevData()
+      setStats(seedStats)
+      window.location.reload()
+    }
   }
 
   if (!isInitialized) {
@@ -255,21 +368,36 @@ export default function DevInitializer() {
             <Package className="h-3 w-3" />
             <span>Componentes:</span>
           </span>
-          <span className="font-medium">{stats.products || JSON.parse(localStorage.getItem('ecxus-stock-products') || '[]').length}</span>
+          <span className="font-medium">
+            {stats.products || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('ecxus-stock-products') || '[]').length : 0)}
+          </span>
         </div>
         <div className="flex items-center justify-between">
           <span className="flex items-center space-x-1">
             <Cpu className="h-3 w-3" />
             <span>Produtos:</span>
           </span>
-          <span className="font-medium">{stats.finishedProducts || JSON.parse(localStorage.getItem('ecxus-stock-finished-products') || '[]').length}</span>
+          <span className="font-medium">
+            {stats.finishedProducts || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('ecxus-stock-finished-products') || '[]').length : 0)}
+          </span>
         </div>
         <div className="flex items-center justify-between">
           <span className="flex items-center space-x-1">
             <CheckCircle className="h-3 w-3" />
             <span>BOMs:</span>
           </span>
-          <span className="font-medium">{stats.bomItems || JSON.parse(localStorage.getItem('bom_items') || '[]').length}</span>
+          <span className="font-medium">
+            {stats.bomItems || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('ecxus-stock-finished-products') || '[]').reduce((sum, p) => sum + (p.bom ? p.bom.length : 0), 0) : 0)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="flex items-center space-x-1">
+            <span>👥</span>
+            <span>Fornecedores:</span>
+          </span>
+          <span className="font-medium">
+            {stats.suppliers || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('ecxus-suppliers') || '[]').length : 0)}
+          </span>
         </div>
       </div>
 

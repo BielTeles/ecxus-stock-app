@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { X, Package, MapPin, DollarSign, Hash, Building, FileText, AlertCircle } from 'lucide-react'
 import { useProducts } from '@/contexts/ProductContext'
+import { useSettings } from '@/contexts/SettingsContext'
+import { useCurrency } from '@/hooks/useCurrency'
 import { PRODUCT_CATEGORIES } from '@/constants/categories'
 import { ProductFormData } from '@/types/product'
 
@@ -17,13 +19,16 @@ interface FormErrors {
 
 export default function AddProductModal({ isOpen, onClose }: AddProductModalProps) {
   const { addProduct } = useProducts()
+  const { settings } = useSettings()
+  const { getCurrencySymbol } = useCurrency()
+  
   const [formData, setFormData] = useState<Partial<ProductFormData>>({
     name: '',
     code: '',
     category: '',
     location: '',
     quantity: 0,
-    minStock: 0,
+    minStock: settings.minStockDefault,
     price: 0,
     supplier: '',
     description: ''
@@ -47,7 +52,7 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
         category: '',
         location: '',
         quantity: 0,
-        minStock: 0,
+        minStock: settings.minStockDefault,
         price: 0,
         supplier: '',
         description: ''
@@ -216,13 +221,13 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
                   required
                   min="0"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="10"
+                  placeholder={settings.minStockDefault.toString()}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <DollarSign className="h-4 w-4 inline mr-1" />
-                  Preço Unitário (R$) *
+                  Preço Unitário ({getCurrencySymbol()}) *
                 </label>
                 <input
                   type="number"
