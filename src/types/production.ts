@@ -1,4 +1,4 @@
-import { Product } from './product'
+// import { Product } from './product' // Commented out as it's not directly used in this file
 
 export type ProcessType = 'SMD' | 'PTH' | 'MIXED'
 export type ProductionStatus = 'ACTIVE' | 'INACTIVE' | 'DISCONTINUED'
@@ -70,4 +70,51 @@ export interface ProductionDashboardData {
     finishedProductId: number
     maxProducible: number
   }[]
+}
+
+export interface ProductionOrder {
+  id: number
+  finishedProductId: number
+  quantity: number
+  status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  plannedStartDate: Date
+  plannedEndDate: Date
+  actualStartDate?: Date
+  actualEndDate?: Date
+  estimatedDuration: number // em minutos
+  notes: string
+  createdAt: Date
+  updatedAt: Date
+  assignedOperator?: string
+  station?: string
+}
+
+export interface ProductionOrderItem {
+  id: number
+  orderId: number
+  componentId: number
+  requiredQuantity: number
+  allocatedQuantity: number
+  consumedQuantity: number
+  status: 'PENDING' | 'ALLOCATED' | 'CONSUMED'
+}
+
+export interface ProductionSchedule {
+  orderId: number
+  startTime: Date
+  endTime: Date
+  station: string
+  operator: string
+  status: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED'
+}
+
+export interface ProductionMetrics {
+  totalOrders: number
+  activeOrders: number
+  completedToday: number
+  pendingOrders: number
+  averageCompletionTime: number
+  efficiency: number
+  onTimeDelivery: number
 } 
