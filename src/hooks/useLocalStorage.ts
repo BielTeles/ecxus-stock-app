@@ -37,17 +37,20 @@ export function useLocalStorage<T>(
         setIsInitialized(true)
       }
     }
-  }, [key, initialValue])
+  }, [key]) // Removido initialValue das dependências para evitar loop infinito
 
   // Função para salvar no localStorage
   const setValue = useCallback((value: T | ((val: T) => T)) => {
     try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value
-      setStoredValue(valueToStore)
-      
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore))
-      }
+      setStoredValue(prevValue => {
+        const valueToStore = value instanceof Function ? value(prevValue) : value
+        
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(key, JSON.stringify(valueToStore))
+        }
+        
+        return valueToStore
+      })
       
       setError(null)
     } catch (error) {
@@ -55,7 +58,7 @@ export function useLocalStorage<T>(
       console.error(errorMessage, error)
       setError(errorMessage)
     }
-  }, [key, storedValue])
+  }, [key]) // Removido storedValue das dependências
 
   const clearError = useCallback(() => {
     setError(null)

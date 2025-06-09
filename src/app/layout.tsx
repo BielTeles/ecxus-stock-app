@@ -4,6 +4,8 @@ import "./globals.css";
 import { ProductProvider } from "@/contexts/ProductContext";
 import { ProductionProvider } from "@/contexts/ProductionContext";
 import { ProductionOrderProvider } from "@/contexts/ProductionOrderContext";
+import DevInitializer from '@/components/DevInitializer';
+import DebugProducts from '@/components/DebugProducts';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,6 +39,8 @@ export default function RootLayout({
             </ProductionOrderProvider>
           </ProductionProvider>
         </ProductProvider>
+        <DebugProducts />
+        <DevInitializer />
       </body>
     </html>
   );
