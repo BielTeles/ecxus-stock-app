@@ -1,181 +1,125 @@
 'use client'
 
-import React, { createContext, useContext, ReactNode } from 'react'
+import React, { createContext, useContext, ReactNode, useCallback, useMemo } from 'react'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { Product, ProductContextType, ProductFormData, ExportData } from '@/types/product'
+import { validateProduct, sanitizeProductData } from '@/utils/validation'
+import { APP_CONFIG } from '@/constants/app'
 
-export interface Product {
-  id: number
-  name: string
-  code: string
-  category: string
-  location: string
-  quantity: number
-  minStock: number
-  price: number
-  supplier: string
-  description: string
-  createdAt: string
-  updatedAt: string
+interface ExtendedProductContextType extends ProductContextType {
+  isLoading: boolean
+  error: string | null
+  clearError: () => void
 }
 
-interface ProductContextType {
-  products: Product[]
-  addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => void
-  updateProduct: (id: number, product: Partial<Product>) => void
-  deleteProduct: (id: number) => void
-  getProductById: (id: number) => Product | undefined
-  exportData: () => string
-  importData: (data: string) => boolean
-  clearAllData: () => void
-}
+const ProductContext = createContext<ExtendedProductContextType | undefined>(undefined)
 
-const ProductContext = createContext<ProductContextType | undefined>(undefined)
-
-// Produtos iniciais de exemplo
-const initialProducts: Product[] = [
-  {
-    id: 1,
-    name: 'Resistor 10kΩ',
-    code: 'R001',
-    category: 'Resistores',
-    location: 'A1-B3',
-    quantity: 500,
-    minStock: 100,
-    price: 0.15,
-    supplier: 'Eletrônica Silva',
-    description: 'Resistor de carbono 1/4W 5%',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 2,
-    name: 'Capacitor 100nF',
-    code: 'C001',
-    category: 'Capacitores',
-    location: 'A2-B1',
-    quantity: 25,
-    minStock: 50,
-    price: 0.25,
-    supplier: 'Componentes Tech',
-    description: 'Capacitor cerâmico 50V',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 3,
-    name: 'LED Azul 5mm',
-    code: 'L001',
-    category: 'LEDs',
-    location: 'B1-C2',
-    quantity: 200,
-    minStock: 75,
-    price: 0.30,
-    supplier: 'LED World',
-    description: 'LED de alto brilho 3.2V 20mA',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 4,
-    name: 'Arduino Uno R3',
-    code: 'ARD001',
-    category: 'Microcontroladores',
-    location: 'C3-A1',
-    quantity: 15,
-    minStock: 10,
-    price: 45.00,
-    supplier: 'Arduino Store',
-    description: 'Placa de desenvolvimento com ATmega328P',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 5,
-    name: 'Sensor PIR',
-    code: 'S001',
-    category: 'Sensores',
-    location: 'D1-B2',
-    quantity: 8,
-    minStock: 20,
-    price: 12.50,
-    supplier: 'Sensor Tech',
-    description: 'Sensor de movimento passivo infravermelho',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 6,
-    name: 'Transistor BC547',
-    code: 'T001',
-    category: 'Transistores',
-    location: 'A3-C1',
-    quantity: 300,
-    minStock: 50,
-    price: 0.20,
-    supplier: 'Eletrônica Silva',
-    description: 'Transistor NPN uso geral',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-]
+// Array de produtos iniciais vazio
+const initialProducts: Product[] = []
 
 export function ProductProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useLocalStorage<Product[]>('ecxus-stock-products', initialProducts)
+  const { 
+    value: products, 
+    setValue: setProducts, 
+    isInitialized: isLoading, 
+    error: storageError, 
+    clearError: clearStorageError 
+  } = useLocalStorage<Product[]>(APP_CONFIG.localStorage.keys.products, initialProducts)
 
-  const addProduct = (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addProduct = useCallback((productData: ProductFormData) => {
+    // Sanitizar e validar dados de entrada
+    const sanitizedData = sanitizeProductData(productData)
+    const validation = validateProduct(sanitizedData)
+    
+    if (!validation.isValid) {
+      const errorMessage = validation.errors.map(e => e.message).join(', ')
+      throw new Error(`Dados inválidos: ${errorMessage}`)
+    }
+
     const newProduct: Product = {
-      ...productData,
+      ...sanitizedData as ProductFormData,
       id: Math.max(...products.map(p => p.id), 0) + 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
+    
     setProducts(prev => [...prev, newProduct])
-  }
+  }, [products, setProducts])
 
-  const updateProduct = (id: number, productData: Partial<Product>) => {
+  const updateProduct = useCallback((id: number, productData: Partial<Product>) => {
+    const existingProduct = products.find(p => p.id === id)
+    if (!existingProduct) {
+      throw new Error(`Produto com ID ${id} não encontrado`)
+    }
+
+    // Criar dados completos para validação
+    const completeData = { ...existingProduct, ...productData }
+    const sanitizedData = sanitizeProductData(completeData)
+    const validation = validateProduct(sanitizedData)
+    
+    if (!validation.isValid) {
+      const errorMessage = validation.errors.map(e => e.message).join(', ')
+      throw new Error(`Dados inválidos: ${errorMessage}`)
+    }
+
     setProducts(prev => prev.map(product => 
       product.id === id 
-        ? { ...product, ...productData, updatedAt: new Date().toISOString() }
+        ? { ...product, ...sanitizedData, updatedAt: new Date().toISOString() }
         : product
     ))
-  }
+  }, [products, setProducts])
 
-  const deleteProduct = (id: number) => {
+  const deleteProduct = useCallback((id: number) => {
+    const exists = products.some(p => p.id === id)
+    if (!exists) {
+      throw new Error(`Produto com ID ${id} não encontrado`)
+    }
+    
     setProducts(prev => prev.filter(product => product.id !== id))
-  }
+  }, [products, setProducts])
 
-  const getProductById = (id: number) => {
+  const getProductById = useCallback((id: number) => {
     return products.find(product => product.id === id)
-  }
+  }, [products])
 
-  const exportData = () => {
-    const exportData = {
+  const exportData = useCallback((): string => {
+    const exportData: ExportData = {
       products,
       exportedAt: new Date().toISOString(),
       version: '1.0'
     }
     return JSON.stringify(exportData, null, 2)
-  }
+  }, [products])
 
-  const importData = (data: string): boolean => {
+  const importData = useCallback((data: string): boolean => {
     try {
-      const parsed = JSON.parse(data)
-      if (parsed.products && Array.isArray(parsed.products)) {
-        setProducts(parsed.products)
-        return true
+      const parsed = JSON.parse(data) as Partial<ExportData>
+      
+      if (!parsed.products || !Array.isArray(parsed.products)) {
+        throw new Error('Formato de dados inválido: produtos não encontrados')
       }
-      return false
+
+      // Validar cada produto importado
+      for (const product of parsed.products) {
+        const validation = validateProduct(product)
+        if (!validation.isValid) {
+          throw new Error(`Produto inválido: ${validation.errors.map(e => e.message).join(', ')}`)
+        }
+      }
+
+      setProducts(parsed.products as Product[])
+      return true
     } catch (error) {
       console.error('Erro ao importar dados:', error)
       return false
     }
-  }
+  }, [setProducts])
 
-  const clearAllData = () => {
+  const clearAllData = useCallback(() => {
     setProducts([])
-  }
+  }, [setProducts])
 
-  const value: ProductContextType = {
+  const value: ExtendedProductContextType = useMemo(() => ({
     products,
     addProduct,
     updateProduct,
@@ -183,8 +127,23 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     getProductById,
     exportData,
     importData,
-    clearAllData
-  }
+    clearAllData,
+    isLoading: !isLoading, // isInitialized -> isLoading (invertido)
+    error: storageError,
+    clearError: clearStorageError
+  }), [
+    products,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    getProductById,
+    exportData,
+    importData,
+    clearAllData,
+    isLoading,
+    storageError,
+    clearStorageError
+  ])
 
   return (
     <ProductContext.Provider value={value}>

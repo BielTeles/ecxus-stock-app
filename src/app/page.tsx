@@ -1,11 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Search, Package, AlertTriangle, BarChart3, Settings } from 'lucide-react'
+import { Plus, Search, Package, AlertTriangle, BarChart3, Settings, Factory } from 'lucide-react'
 import ProductList from '@/components/ProductList'
 import AddProductModal from '@/components/AddProductModal'
 import Dashboard from '@/components/Dashboard'
 import SettingsTab from '@/components/SettingsTab'
+import ProductionDashboard from '@/components/ProductionDashboard'
+import AddFinishedProductModal from '@/components/AddFinishedProductModal'
 import NoSSR from '@/components/NoSSR'
 import DashboardSkeleton from '@/components/DashboardSkeleton'
 import ProductListSkeleton from '@/components/ProductListSkeleton'
@@ -13,11 +15,13 @@ import ProductListSkeleton from '@/components/ProductListSkeleton'
 export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isAddFinishedProductModalOpen, setIsAddFinishedProductModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'products', label: 'Produtos', icon: Package },
+    { id: 'production', label: 'Produção', icon: Factory },
     { id: 'alerts', label: 'Alertas', icon: AlertTriangle },
     { id: 'settings', label: 'Configurações', icon: Settings },
   ]
@@ -100,6 +104,13 @@ export default function Home() {
             <ProductList searchTerm={searchTerm} />
           </NoSSR>
         )}
+        {activeTab === 'production' && (
+          <NoSSR fallback={<DashboardSkeleton />}>
+            <ProductionDashboard 
+              onAddFinishedProduct={() => setIsAddFinishedProductModalOpen(true)}
+            />
+          </NoSSR>
+        )}
         {activeTab === 'alerts' && (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-4">Alertas de Estoque</h2>
@@ -116,6 +127,12 @@ export default function Home() {
       <AddProductModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
+      />
+
+      {/* Add Finished Product Modal */}
+      <AddFinishedProductModal
+        isOpen={isAddFinishedProductModalOpen}
+        onClose={() => setIsAddFinishedProductModalOpen(false)}
       />
     </div>
   )
