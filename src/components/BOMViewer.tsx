@@ -1,7 +1,7 @@
 'use client'
 
 import { Package, ArrowRight } from 'lucide-react'
-import { useProducts } from '@/contexts/ProductContext'
+import { useProducts } from '@/contexts/ProductContextV3'
 import { BOMItem } from '@/types/production'
 
 interface BOMViewerProps {

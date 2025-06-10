@@ -1,7 +1,9 @@
 'use client'
 
 import { AlertTriangle, Trash2, X } from 'lucide-react'
-import { Product } from '@/contexts/ProductContext'
+import type { Database } from '@/lib/supabase'
+
+type Product = Database['public']['Tables']['products']['Row']
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean

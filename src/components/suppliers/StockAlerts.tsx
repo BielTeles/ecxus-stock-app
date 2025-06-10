@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { AlertTriangle, Package, ShoppingCart, Clock, Check } from 'lucide-react'
 import { useSuppliers } from '@/contexts/SupplierContext'
-import { useProducts } from '@/contexts/ProductContext'
+import { useProducts } from '@/contexts/ProductContextV3'
 
 export default function StockAlerts() {
   const { stockAlerts, getStockAlerts, generatePurchaseSuggestions, getSupplierById } = useSuppliers()

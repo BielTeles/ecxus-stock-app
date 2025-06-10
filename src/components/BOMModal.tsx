@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { X, Plus, Trash2, Edit3, Package, Calculator, AlertCircle, Search } from 'lucide-react'
 import { useProduction } from '@/contexts/ProductionContext'
-import { useProducts } from '@/contexts/ProductContext'
+import { useProducts } from '@/contexts/ProductContextV3'
 import { BOMItem } from '@/types/production'
 
 interface BOMModalProps {
@@ -149,7 +149,7 @@ export default function BOMModal({ isOpen, onClose, finishedProductId }: BOMModa
     if (!finishedProduct) return 0
     return finishedProduct.bom.reduce((total, bomItem) => {
       const component = getComponentById(bomItem.componentId)
-      return total + (component ? component.price * bomItem.quantity : 0)
+              return total + (component ? component.sell_price * bomItem.quantity : 0)
     }, 0)
   }
 
@@ -214,7 +214,7 @@ export default function BOMModal({ isOpen, onClose, finishedProductId }: BOMModa
                           <option value={0}>Selecione um componente</option>
                           {availableComponents.map(component => (
                             <option key={component.id} value={component.id}>
-                              {component.name} ({component.code}) - R$ {component.price.toFixed(2)}
+                              {component.name} ({component.code}) - R$ {component.sell_price.toFixed(2)}
                             </option>
                           ))}
                         </select>
@@ -341,7 +341,7 @@ export default function BOMModal({ isOpen, onClose, finishedProductId }: BOMModa
                     const component = getComponentById(bomItem.componentId)
                     if (!component) return null
 
-                    const subtotal = component.price * bomItem.quantity
+                    const subtotal = component.sell_price * bomItem.quantity
                     const available = component.quantity
                     const needed = bomItem.quantity
                     const canProduce = Math.floor(available / needed)
@@ -368,7 +368,7 @@ export default function BOMModal({ isOpen, onClose, finishedProductId }: BOMModa
                             <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
                               <span>Código: {component.code}</span>
                               <span>Qtd: {bomItem.quantity}</span>
-                              <span>Unit: R$ {component.price.toFixed(2)}</span>
+                              <span>Unit: R$ {component.sell_price.toFixed(2)}</span>
                               <span className="font-medium">Subtotal: R$ {subtotal.toFixed(2)}</span>
                             </div>
                             {bomItem.notes && (

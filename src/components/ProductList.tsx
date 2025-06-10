@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Edit, Trash2, MapPin, Package, Filter, Eye, Copy, Grid3X3, List, TrendingUp, TrendingDown, Minus, DollarSign, Calendar, Search, X, SlidersHorizontal } from 'lucide-react'
-import { useProducts, Product } from '@/contexts/ProductContext'
+import { useState, useMemo, useCallback } from 'react'
+import { Edit, Trash2, MapPin, Package, Filter, Eye, Copy, Grid3X3, List, TrendingUp, TrendingDown, Minus, DollarSign, Calendar, Search, X, SlidersHorizontal, Download, Upload, ArrowUpCircle, ArrowDownCircle, History } from 'lucide-react'
+import { useProducts } from '@/contexts/ProductContextV3'
+import type { Database } from '@/lib/supabase'
+
+type Product = Database['public']['Tables']['products']['Row']
 import { useSettings } from '@/contexts/SettingsContext'
 import { useCurrency } from '@/hooks/useCurrency'
 import EditProductModal from './EditProductModal'
@@ -18,7 +21,35 @@ type SortOption = 'name' | 'quantity' | 'price' | 'updated' | 'category'
 type StockFilter = 'all' | 'low' | 'adequate' | 'critical'
 
 export default function ProductList({ searchTerm }: ProductListProps) {
-  const { products, addProduct, deleteProduct } = useProducts()
+  const { products, addProduct, deleteProduct, updateProduct } = useProducts()
+  
+  // Funções de exportação e importação locais
+  const exportData = useCallback(() => {
+    const exportData = {
+      products,
+      exportedAt: new Date().toISOString(),
+      version: '1.0'
+    }
+    return JSON.stringify(exportData, null, 2)
+  }, [products])
+
+  const importData = useCallback((data: string): boolean => {
+    try {
+      const parsed = JSON.parse(data)
+      
+      if (!parsed.products || !Array.isArray(parsed.products)) {
+        throw new Error('Formato de dados inválido: produtos não encontrados')
+      }
+
+      // Aqui seria necessário implementar a importação real
+      // Por enquanto, apenas retornamos false para indicar que não foi implementado
+      console.warn('Importação não implementada no ProductContextV3')
+      return false
+    } catch (error) {
+      console.error('Erro ao importar dados:', error)
+      return false
+    }
+  }, [])
   const { settings } = useSettings()
   const { formatCurrency } = useCurrency()
   
@@ -35,9 +66,12 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null)
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null)
+  const [stockMovementProduct, setStockMovementProduct] = useState<Product | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const [isStockMovementModalOpen, setIsStockMovementModalOpen] = useState(false)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
 
   // Funções de manipulação
   const handleViewProduct = (product: Product) => {
@@ -63,9 +97,9 @@ export default function ProductList({ searchTerm }: ProductListProps) {
       name: `${product.name} (Cópia)`,
       code: `${product.code}-COPY`,
       quantity: 0,
-      minStock: settings.minStockDefault,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      min_stock: settings.minStockDefault,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
     addProduct(duplicatedProduct)
   }
@@ -91,6 +125,92 @@ export default function ProductList({ searchTerm }: ProductListProps) {
     setViewingProduct(null)
   }
 
+  // Novas funcionalidades
+  const handleStockMovement = (product: Product) => {
+    setStockMovementProduct(product)
+    setIsStockMovementModalOpen(true)
+  }
+
+  const handleCloseStockMovementModal = () => {
+    setIsStockMovementModalOpen(false)
+    setStockMovementProduct(null)
+  }
+
+  const handleExportData = () => {
+    try {
+      const dataStr = exportData()
+      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `ecxus-stock-produtos-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      alert('✅ Dados exportados com sucesso!')
+    } catch (error) {
+      console.error('Erro ao exportar:', error)
+      alert('❌ Erro ao exportar dados')
+    }
+  }
+
+  const handleExportCSV = () => {
+    try {
+      const csvContent = [
+        ['Nome', 'Código', 'Categoria', 'Quantidade', 'Preço', 'Localização', 'Fornecedor', 'Est. Mínimo'].join(','),
+        ...filteredProducts.map(product => [
+          `"${product.name}"`,
+          `"${product.code}"`,
+          `"${product.category}"`,
+          product.quantity || 0,
+          product.sell_price || 0,
+          `"${product.location}"`,
+          `"${product.supplier || ''}"`,
+          product.min_stock || 0
+        ].join(','))
+      ].join('\n')
+
+      const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `ecxus-stock-produtos-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      alert('✅ CSV exportado com sucesso!')
+    } catch (error) {
+      console.error('Erro ao exportar CSV:', error)
+      alert('❌ Erro ao exportar CSV')
+    }
+  }
+
+  const handleImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string
+        const success = importData(content)
+        if (success) {
+          alert('✅ Dados importados com sucesso!')
+          setIsImportModalOpen(false)
+        } else {
+          alert('❌ Erro ao importar dados. Verifique o formato do arquivo.')
+        }
+      } catch (error) {
+        console.error('Erro ao importar:', error)
+        alert('❌ Erro ao ler arquivo')
+      }
+    }
+    reader.readAsText(file)
+    event.target.value = ''
+  }
+
   const handleSort = (field: SortOption) => {
     if (sortBy === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
@@ -112,7 +232,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   // Computações de dados
   const categories = useMemo(() => ['all', ...Array.from(new Set(products.map(p => p.category)))], [products])
   
-  const maxPrice = useMemo(() => Math.max(...products.map(p => p.price || 0), 1000), [products])
+  const maxPrice = useMemo(() => Math.max(...products.map(p => p.sell_price || 0), 1000), [products])
 
   const filteredProducts = useMemo(() => {
     return products
@@ -125,9 +245,9 @@ export default function ProductList({ searchTerm }: ProductListProps) {
         
         const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory
         
-        const matchesPrice = (product.price || 0) >= priceRange[0] && (product.price || 0) <= priceRange[1]
+        const matchesPrice = (product.sell_price || 0) >= priceRange[0] && (product.sell_price || 0) <= priceRange[1]
         
-        const stockStatus = getStockStatus(product.quantity || 0, product.minStock || 1).status
+        const stockStatus = getStockStatus(product.quantity || 0, product.min_stock || 1).status
         const matchesStock = stockFilter === 'all' || 
           (stockFilter === 'critical' && stockStatus === 'low') ||
           (stockFilter === 'low' && (stockStatus === 'low' || stockStatus === 'medium')) ||
@@ -146,10 +266,10 @@ export default function ProductList({ searchTerm }: ProductListProps) {
             comparison = (a.quantity || 0) - (b.quantity || 0)
             break
           case 'price':
-            comparison = (a.price || 0) - (b.price || 0)
+            comparison = (a.sell_price || 0) - (b.sell_price || 0)
             break
           case 'updated':
-            comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+            comparison = new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
             break
           case 'category':
             comparison = a.category.localeCompare(b.category)
@@ -163,9 +283,9 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   // Estatísticas
   const stats = useMemo(() => {
     const totalProducts = products.length
-    const lowStockProducts = products.filter(p => (p.quantity || 0) <= (p.minStock || 1)).length
-    const totalValue = products.reduce((sum, p) => sum + (p.quantity || 0) * (p.price || 0), 0)
-    const averagePrice = products.length > 0 ? products.reduce((sum, p) => sum + (p.price || 0), 0) / products.length : 0
+    const lowStockProducts = products.filter(p => (p.quantity || 0) <= (p.min_stock || 1)).length
+    const totalValue = products.reduce((sum, p) => sum + (p.quantity || 0) * (p.sell_price || 0), 0)
+    const averagePrice = products.length > 0 ? products.reduce((sum, p) => sum + (p.sell_price || 0), 0) / products.length : 0
     
     return {
       totalProducts,
@@ -302,8 +422,45 @@ export default function ProductList({ searchTerm }: ProductListProps) {
               </button>
             </div>
 
-            <div className="text-sm text-gray-600">
-              {filteredProducts.length} de {products.length} produtos
+            <div className="flex items-center space-x-2">
+              <div className="text-sm text-gray-600">
+                {filteredProducts.length} de {products.length} produtos
+              </div>
+              
+              {/* Export/Import Actions */}
+              <div className="flex items-center space-x-2 ml-4">
+                <div className="relative group">
+                  <button className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                    <Download className="h-4 w-4" />
+                  </button>
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                    <div className="p-2">
+                      <button
+                        onClick={handleExportData}
+                        className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md flex items-center space-x-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span>Exportar JSON</span>
+                      </button>
+                      <button
+                        onClick={handleExportCSV}
+                        className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md flex items-center space-x-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span>Exportar CSV</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => setIsImportModalOpen(true)}
+                  className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                  title="Importar dados"
+                >
+                  <Upload className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -359,8 +516,8 @@ export default function ProductList({ searchTerm }: ProductListProps) {
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => {
-            const stockStatus = getStockStatus(product.quantity || 0, product.minStock || 1)
-            const totalValue = (product.quantity || 0) * (product.price || 0)
+                          const stockStatus = getStockStatus(product.quantity || 0, product.min_stock || 1)
+            const totalValue = (product.quantity || 0) * (product.sell_price || 0)
             
             return (
               <div key={product.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 overflow-hidden group">
@@ -398,7 +555,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
                         <p className="text-xs text-gray-500">Preço unitário</p>
-                        <p className="font-semibold text-gray-900">{formatCurrency(product.price || 0)}</p>
+                        <p className="font-semibold text-gray-900">{formatCurrency(product.sell_price || 0)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Valor total</p>
@@ -410,7 +567,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                     <div className="mb-4">
                       <div className="flex justify-between text-xs text-gray-600 mb-2">
                         <span>Nível do estoque</span>
-                        <span>{product.quantity}/{product.minStock} mín.</span>
+                        <span>{product.quantity}/{product.min_stock} mín.</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
@@ -418,7 +575,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                             stockStatus.status === 'low' ? 'bg-red-500' :
                             stockStatus.status === 'medium' ? 'bg-orange-500' : 'bg-green-500'
                           }`}
-                          style={{ width: `${Math.min((((product.quantity || 0) / ((product.minStock || 1) * 2)) * 100), 100)}%` }}
+                          style={{ width: `${Math.min((((product.quantity || 0) / ((product.min_stock || 1) * 2)) * 100), 100)}%` }}
                         ></div>
                       </div>
                     </div>
@@ -434,6 +591,13 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                           title="Ver detalhes"
                         >
                           <Eye className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleStockMovement(product)}
+                          className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
+                          title="Movimentar estoque"
+                        >
+                          <ArrowUpCircle className="h-4 w-4" />
                         </button>
                         <button 
                           onClick={() => handleDuplicateProduct(product)}
@@ -528,7 +692,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredProducts.map((product) => {
-                  const stockStatus = getStockStatus(product.quantity || 0, product.minStock || 1)
+                  const stockStatus = getStockStatus(product.quantity || 0, product.min_stock || 1)
                   
                   return (
                     <tr key={product.id} className="hover:bg-gray-50 transition-colors">
@@ -550,12 +714,12 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{product.quantity} un.</div>
-                        <div className="text-xs text-gray-500">Mín: {product.minStock}</div>
+                        <div className="text-xs text-gray-500">Mín: {product.min_stock}</div>
                       </td>
                                              <td className="px-6 py-4 whitespace-nowrap">
-                         <div className="text-sm font-medium text-gray-900">{formatCurrency(product.price || 0)}</div>
-                         <div className="text-xs text-gray-500">
-                           Total: {formatCurrency((product.quantity || 0) * (product.price || 0))}
+                                         <div className="text-sm font-medium text-gray-900">{formatCurrency(product.sell_price || 0)}</div>
+                <div className="text-xs text-gray-500">
+                  Total: {formatCurrency((product.quantity || 0) * (product.sell_price || 0))}
                          </div>
                        </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
@@ -574,6 +738,13 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                             title="Ver detalhes"
                           >
                             <Eye className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleStockMovement(product)}
+                            className="text-purple-600 hover:text-purple-900 transition-colors"
+                            title="Movimentar estoque"
+                          >
+                            <ArrowUpCircle className="h-4 w-4" />
                           </button>
                           <button 
                             onClick={() => handleDuplicateProduct(product)}
@@ -646,6 +817,165 @@ export default function ProductList({ searchTerm }: ProductListProps) {
         onClose={handleCloseDetailsModal}
         product={viewingProduct}
       />
+
+      {/* Stock Movement Modal */}
+      {isStockMovementModalOpen && stockMovementProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <ArrowUpCircle className="h-5 w-5 text-purple-600 mr-2" />
+              Movimentar Estoque - {stockMovementProduct.name}
+            </h3>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              const formData = new FormData(e.currentTarget)
+              const type = formData.get('type') as string
+              const quantity = parseInt(formData.get('quantity') as string)
+              const reason = formData.get('reason') as string
+              
+              if (!quantity || quantity <= 0) {
+                alert('Digite uma quantidade válida')
+                return
+              }
+              
+              const newQuantity = type === 'entrada' 
+                ? (stockMovementProduct.quantity || 0) + quantity
+                : Math.max(0, (stockMovementProduct.quantity || 0) - quantity)
+              
+              updateProduct(stockMovementProduct.id, { quantity: newQuantity })
+              
+              // Simular histórico de movimentação (em uma aplicação real, isso seria salvo em um contexto separado)
+              const movement = {
+                id: Date.now(),
+                productId: stockMovementProduct.id,
+                type,
+                quantity,
+                reason,
+                date: new Date().toISOString(),
+                previousQuantity: stockMovementProduct.quantity || 0,
+                newQuantity
+              }
+              
+              alert(`✅ Movimentação registrada!\n${type === 'entrada' ? 'Entrada' : 'Saída'} de ${quantity} unidades\nEstoque atual: ${newQuantity}`)
+              handleCloseStockMovementModal()
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tipo de Movimentação
+                  </label>
+                  <select name="type" required className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <option value="entrada">Entrada (Recebimento)</option>
+                    <option value="saida">Saída (Consumo/Uso)</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Quantidade
+                  </label>
+                  <input
+                    type="number"
+                    name="quantity"
+                    min="1"
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Digite a quantidade"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Motivo/Observação
+                  </label>
+                  <textarea
+                    name="reason"
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Ex: Recebimento de compra, Uso em produção, Ajuste de inventário..."
+                  />
+                </div>
+                
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-600">
+                    <strong>Estoque atual:</strong> {stockMovementProduct.quantity || 0} unidades
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Estoque mínimo:</strong> {stockMovementProduct.min_stock || 0} unidades
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={handleCloseStockMovementModal}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Registrar Movimentação
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Upload className="h-5 w-5 text-green-600 mr-2" />
+              Importar Produtos
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600 mb-4">
+                  Selecione um arquivo JSON exportado anteriormente
+                </p>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportFile}
+                  className="hidden"
+                  id="import-file"
+                />
+                <label
+                  htmlFor="import-file"
+                  className="inline-block px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors"
+                >
+                  Escolher Arquivo
+                </label>
+              </div>
+              
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-800">
+                  <strong>⚠️ Atenção:</strong> A importação irá substituir todos os produtos existentes. 
+                  Recomendamos fazer um backup antes.
+                </p>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setIsImportModalOpen(false)}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 } 

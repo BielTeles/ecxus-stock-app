@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { ShoppingCart, Plus, Eye, DollarSign, Clock, CheckCircle, X } from 'lucide-react'
 import { useSuppliers } from '@/contexts/SupplierContext'
-import { useProducts } from '@/contexts/ProductContext'
+import { useProducts } from '@/contexts/ProductContextV3'
 import { useCurrency } from '@/hooks/useCurrency'
 
 interface PurchaseOrderListProps {

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { X, Package, MapPin, DollarSign, Hash, Building, FileText, AlertCircle } from 'lucide-react'
-import { useProducts } from '@/contexts/ProductContext'
+import { useProducts } from '@/contexts/ProductContextV3'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useCurrency } from '@/hooks/useCurrency'
 import { PRODUCT_CATEGORIES } from '@/constants/categories'
@@ -22,7 +22,7 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
   const { settings } = useSettings()
   const { getCurrencySymbol } = useCurrency()
   
-  const [formData, setFormData] = useState<Partial<ProductFormData>>({
+  const [formData, setFormData] = useState({
     name: '',
     code: '',
     category: '',
@@ -43,7 +43,22 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
     setErrors({})
     
     try {
-      await addProduct(formData as ProductFormData)
+      // Converter dados do formulário para o formato do banco
+      const productData = {
+        name: formData.name || '',
+        code: formData.code || '',
+        category: formData.category || '',
+        location: formData.location || '',
+        quantity: Number(formData.quantity) || 0,
+        min_stock: Number(formData.minStock) || settings.minStockDefault,
+        sell_price: Number(formData.price) || 0,
+        purchase_price: Number(formData.price) || 0, // Usar o mesmo valor por enquanto
+        unit: 'un', // Valor padrão
+        supplier: formData.supplier || '',
+        description: formData.description || ''
+      }
+      
+      await addProduct(productData)
       
       // Reset form e fecha modal
       setFormData({

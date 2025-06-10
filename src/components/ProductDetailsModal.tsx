@@ -1,7 +1,9 @@
 'use client'
 
 import { X, Package, MapPin, DollarSign, Hash, Building, FileText, Calendar, TrendingUp, AlertTriangle } from 'lucide-react'
-import { Product } from '@/contexts/ProductContext'
+import type { Database } from '@/lib/supabase'
+
+type Product = Database['public']['Tables']['products']['Row']
 import { useCurrency } from '@/hooks/useCurrency'
 
 interface ProductDetailsModalProps {
@@ -16,12 +18,12 @@ export default function ProductDetailsModal({ isOpen, onClose, product }: Produc
   if (!isOpen || !product) return null
 
   const stockStatus = (() => {
-    if (product.quantity <= product.minStock) return { 
+    if (product.quantity <= product.min_stock) return { 
       status: 'Crítico', 
       color: 'text-red-600 bg-red-100 border-red-200',
       icon: AlertTriangle 
     }
-    if (product.quantity <= product.minStock * 1.5) return { 
+    if (product.quantity <= product.min_stock * 1.5) return { 
       status: 'Baixo', 
       color: 'text-orange-600 bg-orange-100 border-orange-200',
       icon: TrendingUp 
@@ -33,7 +35,7 @@ export default function ProductDetailsModal({ isOpen, onClose, product }: Produc
     }
   })()
 
-  const totalValue = product.quantity * product.price
+  const totalValue = product.quantity * product.sell_price
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -111,12 +113,12 @@ export default function ProductDetailsModal({ isOpen, onClose, product }: Produc
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm font-medium text-gray-600">Estoque mínimo:</span>
-                  <span className="font-medium text-gray-900">{product.minStock} un.</span>
+                  <span className="font-medium text-gray-900">{product.min_stock} un.</span>
                 </div>
                 <div className="mt-2">
                   <div className="flex justify-between text-xs text-gray-600 mb-1">
                     <span>Nível do estoque</span>
-                    <span>{((product.quantity / (product.minStock * 2)) * 100).toFixed(0)}%</span>
+                    <span>{((product.quantity / (product.min_stock * 2)) * 100).toFixed(0)}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
@@ -124,7 +126,7 @@ export default function ProductDetailsModal({ isOpen, onClose, product }: Produc
                         stockStatus.status === 'Crítico' ? 'bg-red-500' :
                         stockStatus.status === 'Baixo' ? 'bg-orange-500' : 'bg-green-500'
                       }`}
-                      style={{ width: `${Math.min(((product.quantity / (product.minStock * 2)) * 100), 100)}%` }}
+                      style={{ width: `${Math.min(((product.quantity / (product.min_stock * 2)) * 100), 100)}%` }}
                     ></div>
                   </div>
                 </div>
@@ -141,7 +143,7 @@ export default function ProductDetailsModal({ isOpen, onClose, product }: Produc
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center">
                 <p className="text-sm text-gray-600">Preço Unitário</p>
-                <p className="text-xl font-bold text-green-600">{formatCurrency(product.price)}</p>
+                <p className="text-xl font-bold text-green-600">{formatCurrency(product.sell_price)}</p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-600">Valor Total em Estoque</p>
@@ -149,7 +151,7 @@ export default function ProductDetailsModal({ isOpen, onClose, product }: Produc
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-600">Valor Estoque Mínimo</p>
-                <p className="text-lg font-semibold text-gray-700">{formatCurrency(product.minStock * product.price)}</p>
+                <p className="text-lg font-semibold text-gray-700">{formatCurrency(product.min_stock * product.sell_price)}</p>
               </div>
             </div>
           </div>
@@ -195,7 +197,7 @@ export default function ProductDetailsModal({ isOpen, onClose, product }: Produc
           </div>
 
           {/* Alertas */}
-          {product.quantity <= product.minStock && (
+          {product.quantity <= product.min_stock && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="flex items-start">
                 <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
@@ -208,7 +210,7 @@ export default function ProductDetailsModal({ isOpen, onClose, product }: Produc
                   <div className="mt-2 text-sm">
                     <span className="font-medium text-red-800">Sugestão de pedido:</span>
                     <span className="text-red-700 ml-1">
-                      {Math.max(product.minStock * 2 - product.quantity, 0)} unidades
+                      {Math.max(product.min_stock * 2 - product.quantity, 0)} unidades
                     </span>
                   </div>
                 </div>

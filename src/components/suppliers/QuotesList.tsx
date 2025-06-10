@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { FileText, Plus, Eye, Star, Clock, CheckCircle, X, DollarSign, TrendingUp } from 'lucide-react'
 import { useSuppliers } from '@/contexts/SupplierContext'
-import { useProducts } from '@/contexts/ProductContext'
+import { useProducts } from '@/contexts/ProductContextV3'
 import { useCurrency } from '@/hooks/useCurrency'
 
 interface QuotesListProps {

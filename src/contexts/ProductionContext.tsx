@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, ReactNode, useCallback, useMemo } from 'react'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
-import { useProducts } from './ProductContext'
+import { useProducts } from './ProductContextV3'
 import { 
   FinishedProduct, 
   ProductionContextType, 
@@ -161,7 +161,7 @@ export function ProductionProvider({ children }: { children: ReactNode }) {
         const canProduce = Math.floor(available / needed)
 
         maxProducible = Math.min(maxProducible, canProduce)
-        totalCost += component.price * needed
+        totalCost += component.sell_price * needed
 
         if (canProduce === 0) {
           missingComponents.push({

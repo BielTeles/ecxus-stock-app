@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { X, Package, MapPin, DollarSign, Hash, Building, FileText, Save } from 'lucide-react'
-import { useProducts, Product } from '@/contexts/ProductContext'
+import { useProducts } from '@/contexts/ProductContextV3'
+import type { Database } from '@/lib/supabase'
+
+type Product = Database['public']['Tables']['products']['Row']
 import { useCurrency } from '@/hooks/useCurrency'
 
 interface EditProductModalProps {
@@ -48,8 +51,8 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
         category: product.category || '',
         location: product.location || '',
         quantity: (product.quantity || 0).toString(),
-        minStock: (product.minStock || 0).toString(),
-        price: (product.price || 0).toString(),
+        minStock: (product.min_stock || 0).toString(),
+        price: (product.sell_price || 0).toString(),
         supplier: product.supplier || '',
         description: product.description || ''
       })
@@ -68,8 +71,8 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
       category: formData.category,
       location: formData.location,
       quantity: parseInt(formData.quantity) || 0,
-      minStock: parseInt(formData.minStock) || 0,
-      price: parseFloat(formData.price) || 0,
+      min_stock: parseInt(formData.minStock) || 0,
+              sell_price: parseFloat(formData.price) || 0,
       supplier: formData.supplier,
       description: formData.description
     })

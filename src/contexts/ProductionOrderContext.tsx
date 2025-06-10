@@ -4,7 +4,7 @@ import { createContext, useContext, useCallback, useMemo } from 'react'
 import { ProductionOrder, ProductionOrderItem, ProductionMetrics } from '@/types/production'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { useProduction } from './ProductionContext'
-import { useProducts } from './ProductContext'
+import { useProducts } from './ProductContextV3'
 
 interface ProductionOrderContextData {
   // State

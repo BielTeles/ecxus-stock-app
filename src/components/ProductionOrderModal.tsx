@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { X, Calendar, Clock, User, MapPin, AlertCircle, CheckCircle } from 'lucide-react'
 import { useProductionOrders } from '@/contexts/ProductionOrderContext'
 import { useProduction } from '@/contexts/ProductionContext'
-import { useProducts } from '@/contexts/ProductContext'
+import { useProducts } from '@/contexts/ProductContextV3'
 import { 
   ORDER_PRIORITY, 
   ORDER_PRIORITY_LABELS, 

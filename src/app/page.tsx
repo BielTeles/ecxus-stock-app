@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Search, Package, AlertTriangle, BarChart3, Settings, Factory, ClipboardList, Play, CheckCircle, Users } from 'lucide-react'
+import { Plus, Search, Package, AlertTriangle, BarChart3, Settings, Factory, ClipboardList, Play, CheckCircle, Users, FileText } from 'lucide-react'
 import ProductList from '@/components/ProductList'
 import AddProductModal from '@/components/AddProductModal'
 import Dashboard from '@/components/Dashboard'
@@ -11,6 +11,7 @@ import ProductionDashboard from '@/components/ProductionDashboard'
 import AddFinishedProductModal from '@/components/AddFinishedProductModal'
 import ProductionOrderModal from '@/components/ProductionOrderModal'
 import SupplierManagement from '@/components/SupplierManagement'
+import ReportsCenter from '@/components/ReportsCenter'
 import NoSSR from '@/components/NoSSR'
 import DashboardSkeleton from '@/components/DashboardSkeleton'
 import ProductListSkeleton from '@/components/ProductListSkeleton'
@@ -69,6 +70,7 @@ export default function Home() {
     { id: 'orders', label: 'Ordens', icon: ClipboardList },
     { id: 'suppliers', label: 'Fornecedores', icon: Users },
     { id: 'alerts', label: 'Alertas', icon: AlertTriangle },
+    { id: 'reports', label: 'Relatórios', icon: FileText },
     { id: 'settings', label: 'Configurações', icon: Settings },
   ]
 
@@ -346,6 +348,11 @@ export default function Home() {
         {activeTab === 'alerts' && (
           <NoSSR fallback={<DashboardSkeleton />}>
             <AlertsTab />
+          </NoSSR>
+        )}
+        {activeTab === 'reports' && (
+          <NoSSR fallback={<DashboardSkeleton />}>
+            <ReportsCenter />
           </NoSSR>
         )}
         {activeTab === 'settings' && <SettingsTab />}

@@ -7,13 +7,13 @@ import {
   Bell, Mail, Palette, Globe, Lock, Key, RefreshCw, FileText, Zap,
   Server, Calendar, TrendingUp, Eye, EyeOff, ChevronRight, Check, X
 } from 'lucide-react'
-import { useProducts } from '@/contexts/ProductContext'
+import { useProducts } from '@/contexts/ProductContextV3'
 import { useSuppliers } from '@/contexts/SupplierContext'
 import { useProduction } from '@/contexts/ProductionContext'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useCurrency } from '@/hooks/useCurrency'
 
-type SettingsSection = 'general' | 'system' | 'users' | 'security' | 'backup' | 'monitoring' | 'notifications' | 'logs'
+type SettingsSection = 'general' | 'system' | 'users' | 'security' | 'backup' | 'monitoring' | 'notifications' | 'logs' | 'integrations' | 'performance'
 
 interface SystemMetrics {
   uptime: string
@@ -179,6 +179,8 @@ export default function SettingsTab() {
     { id: 'backup', label: 'Backup', icon: Database },
     { id: 'monitoring', label: 'Monitoramento', icon: Activity },
     { id: 'notifications', label: 'Notificações', icon: Bell },
+    { id: 'integrations', label: 'Integrações', icon: Globe },
+    { id: 'performance', label: 'Performance', icon: Zap },
     { id: 'logs', label: 'Logs', icon: FileText }
   ]
 

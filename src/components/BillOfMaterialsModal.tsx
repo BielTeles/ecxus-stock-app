@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { X, Plus, Trash2, Package, Calculator } from 'lucide-react'
 import { useProduction } from '@/contexts/ProductionContext'
-import { useProducts } from '@/contexts/ProductContext'
+import { useProducts } from '@/contexts/ProductContextV3'
 
 interface BillOfMaterialsModalProps {
   isOpen: boolean
@@ -99,7 +99,7 @@ export default function BillOfMaterialsModal({ isOpen, onClose, finishedProductI
                     <option value={0}>Selecione um componente</option>
                     {products.map(product => (
                       <option key={product.id} value={product.id}>
-                        {product.name} ({product.code}) - R$ {product.price.toFixed(2)}
+                        {product.name} ({product.code}) - R$ {product.sell_price.toFixed(2)}
                       </option>
                     ))}
                   </select>
@@ -194,7 +194,7 @@ export default function BillOfMaterialsModal({ isOpen, onClose, finishedProductI
                   const component = getComponentById(bomItem.componentId)
                   if (!component) return null
 
-                  const subtotal = component.price * bomItem.quantity
+                  const subtotal = component.sell_price * bomItem.quantity
                   const available = component.quantity
                   const needed = bomItem.quantity
                   const canProduce = Math.floor(available / needed)
@@ -221,7 +221,7 @@ export default function BillOfMaterialsModal({ isOpen, onClose, finishedProductI
                           <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
                             <span>Código: {component.code}</span>
                             <span>Qtd: {bomItem.quantity}</span>
-                            <span>Unit: R$ {component.price.toFixed(2)}</span>
+                            <span>Unit: R$ {component.sell_price.toFixed(2)}</span>
                             <span className="font-medium">Subtotal: R$ {subtotal.toFixed(2)}</span>
                           </div>
                         </div>

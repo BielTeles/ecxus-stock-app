@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { BarChart3, Download, Filter, Calendar, AlertCircle, CheckCircle, XCircle } from 'lucide-react'
 import { useProduction } from '@/contexts/ProductionContext'
-import { useProducts } from '@/contexts/ProductContext'
+import { useProducts } from '@/contexts/ProductContextV3'
 
 interface ProductionReportProps {
   isOpen: boolean

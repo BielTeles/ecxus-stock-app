@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, ReactNode, useCallback, useMemo } from 'react'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
-import { useProducts } from '@/contexts/ProductContext'
+import { useProducts } from '@/contexts/ProductContextV3'
 import { 
   Supplier, 
   SupplierFormData, 
