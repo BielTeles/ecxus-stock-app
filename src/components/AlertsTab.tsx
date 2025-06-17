@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, memo } from 'react'
 import { 
   AlertTriangle, Package, Clock, User, TrendingDown, Calendar,
   Bell, BellOff, Eye, EyeOff, Filter, CheckCircle, X, ArrowRight,
@@ -36,7 +36,7 @@ interface Alert {
   }>
 }
 
-export default function AlertsTab() {
+function AlertsTab() {
   const { products } = useProducts()
   const { suppliers } = useSuppliers()
   const { productionOrders } = useProductionOrders()
@@ -792,4 +792,6 @@ export default function AlertsTab() {
       )}
     </div>
   )
-} 
+}
+
+export default memo(AlertsTab) 

@@ -1,23 +1,48 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Plus, Search, Package, AlertTriangle, BarChart3, Settings, Factory, ClipboardList, Play, CheckCircle, Users, FileText } from 'lucide-react'
-import ProductList from '@/components/ProductList'
-import AddProductModal from '@/components/AddProductModal'
-import Dashboard from '@/components/Dashboard'
-import SettingsTab from '@/components/SettingsTab'
-import AlertsTab from '@/components/AlertsTab'
-import ProductionDashboard from '@/components/ProductionDashboard'
-import AddFinishedProductModal from '@/components/AddFinishedProductModal'
-import ProductionOrderModal from '@/components/ProductionOrderModal'
-import SupplierManagement from '@/components/SupplierManagement'
-import ReportsCenter from '@/components/ReportsCenter'
 import NoSSR from '@/components/NoSSR'
 import DashboardSkeleton from '@/components/DashboardSkeleton'
 import ProductListSkeleton from '@/components/ProductListSkeleton'
 import { useProductionOrders } from '@/contexts/ProductionOrderContext'
 import { useProduction } from '@/contexts/ProductionContext'
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_PRIORITY_COLORS } from '@/constants/production'
+
+// Lazy Loading dos componentes pesados
+const ProductList = dynamic(() => import('@/components/ProductList'), {
+  loading: () => <ProductListSkeleton />
+})
+
+const Dashboard = dynamic(() => import('@/components/Dashboard'), {
+  loading: () => <DashboardSkeleton />
+})
+
+const SettingsTab = dynamic(() => import('@/components/SettingsTab'), {
+  loading: () => <DashboardSkeleton />
+})
+
+const AlertsTab = dynamic(() => import('@/components/AlertsTab'), {
+  loading: () => <DashboardSkeleton />
+})
+
+const ProductionDashboard = dynamic(() => import('@/components/ProductionDashboard'), {
+  loading: () => <DashboardSkeleton />
+})
+
+const SupplierManagement = dynamic(() => import('@/components/SupplierManagement'), {
+  loading: () => <DashboardSkeleton />
+})
+
+const ReportsCenter = dynamic(() => import('@/components/ReportsCenter'), {
+  loading: () => <DashboardSkeleton />
+})
+
+// Modais mais leves podem ser importados normalmente
+import AddProductModal from '@/components/AddProductModal'
+import AddFinishedProductModal from '@/components/AddFinishedProductModal'
+import ProductionOrderModal from '@/components/ProductionOrderModal'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -140,24 +165,18 @@ export default function Home() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'dashboard' && (
-          <NoSSR fallback={<DashboardSkeleton />}>
-            <Dashboard 
-              onAddProduct={() => setIsAddModalOpen(true)}
-              onSwitchToProducts={() => setActiveTab('products')}
-            />
-          </NoSSR>
+          <Dashboard 
+            onAddProduct={() => setIsAddModalOpen(true)}
+            onSwitchToProducts={() => setActiveTab('products')}
+          />
         )}
         {activeTab === 'products' && (
-          <NoSSR fallback={<ProductListSkeleton />}>
-            <ProductList searchTerm={searchTerm} />
-          </NoSSR>
+          <ProductList searchTerm={searchTerm} />
         )}
         {activeTab === 'production' && (
-          <NoSSR fallback={<DashboardSkeleton />}>
-            <ProductionDashboard 
-              onAddFinishedProduct={() => setIsAddFinishedProductModalOpen(true)}
-            />
-          </NoSSR>
+          <ProductionDashboard 
+            onAddFinishedProduct={() => setIsAddFinishedProductModalOpen(true)}
+          />
         )}
         {activeTab === 'orders' && (
           <div className="space-y-6">
@@ -340,21 +359,9 @@ export default function Home() {
             </div>
           </div>
         )}
-        {activeTab === 'suppliers' && (
-          <NoSSR fallback={<DashboardSkeleton />}>
-            <SupplierManagement />
-          </NoSSR>
-        )}
-        {activeTab === 'alerts' && (
-          <NoSSR fallback={<DashboardSkeleton />}>
-            <AlertsTab />
-          </NoSSR>
-        )}
-        {activeTab === 'reports' && (
-          <NoSSR fallback={<DashboardSkeleton />}>
-            <ReportsCenter />
-          </NoSSR>
-        )}
+        {activeTab === 'suppliers' && <SupplierManagement />}
+        {activeTab === 'alerts' && <AlertsTab />}
+        {activeTab === 'reports' && <ReportsCenter />}
         {activeTab === 'settings' && <SettingsTab />}
       </main>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, memo } from 'react'
 import { Edit, Trash2, MapPin, Package, Filter, Eye, Copy, Grid3X3, List, TrendingUp, TrendingDown, Minus, DollarSign, Calendar, Search, X, SlidersHorizontal, Download, Upload, ArrowUpCircle, ArrowDownCircle, History } from 'lucide-react'
 import { useProducts } from '@/contexts/ProductContextV3'
 import type { Database } from '@/lib/supabase'
@@ -20,7 +20,7 @@ type ViewMode = 'grid' | 'list'
 type SortOption = 'name' | 'quantity' | 'price' | 'updated' | 'category'
 type StockFilter = 'all' | 'low' | 'adequate' | 'critical'
 
-export default function ProductList({ searchTerm }: ProductListProps) {
+function ProductList({ searchTerm }: ProductListProps) {
   const { products, addProduct, deleteProduct, updateProduct } = useProducts()
   
   // Funções de exportação e importação locais
@@ -978,4 +978,6 @@ export default function ProductList({ searchTerm }: ProductListProps) {
       )}
     </div>
   )
-} 
+}
+
+export default memo(ProductList) 

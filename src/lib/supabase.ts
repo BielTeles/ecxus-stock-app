@@ -2,7 +2,12 @@ import { createClient } from '@supabase/supabase-js'
 
 // Configurações do Supabase
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nletapjvgiaodajzkmcl.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sZXRhcGp2Z2lhb2RhanprbWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQwMjYyMjIsImV4cCI6MjA0OTYwMjIyMn0.x2uVXowN0t5nWqrFV-8K2v1W8WMFq-9A1DdBt-2cCWE'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sZXRhcGp2Z2lhb2RhanprbWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1NjUwNjcsImV4cCI6MjA2NTE0MTA2N30.fKW5zo_lnW5jf4wLidhTugxZVb8u_Y_KHOeV1Kk642o'
+
+// Debug das variáveis de ambiente
+console.log('🔧 Environment Variables Debug:')
+console.log('URL from env:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+console.log('Key from env:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'true' : 'false')
 
 // Verificar se as credenciais estão configuradas
 if (!supabaseUrl || !supabaseAnonKey) {

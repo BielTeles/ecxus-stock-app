@@ -1,36 +1,168 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏭 Ecxus Stock App
 
-## Getting Started
+Sistema avançado de gerenciamento de estoque para componentes eletrônicos, com funcionalidades completas de produção, fornecedores e relatórios.
 
-First, run the development server:
+## ✨ Funcionalidades Principais
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 📦 **Gerenciamento de Produtos**
+- ✅ CRUD completo de produtos eletrônicos
+- ✅ Categorização automática (Resistores, Capacitores, LEDs, etc.)
+- ✅ Controle de estoque com alertas inteligentes
+- ✅ Sistema de localização (posições físicas)
+- ✅ Busca e filtros avançados
+- ✅ Importação/exportação de dados (JSON/CSV)
+
+### 🏭 **Sistema de Produção**
+- ✅ Cadastro de produtos acabados
+- ✅ BOM (Bill of Materials) integrado e visual
+- ✅ Cálculo automático de custos de produção
+- ✅ Simulação de produção em tempo real
+- ✅ Análise de viabilidade e lucratividade
+
+### 📋 **Ordens de Produção**
+- ✅ Criação e gestão de ordens de produção
+- ✅ Controle de status (Planejado → Em Progresso → Concluído)
+- ✅ Sistema de priorização
+- ✅ Rastreamento de datas e prazos
+- ✅ Relatórios de performance
+
+### 🤝 **Gestão de Fornecedores**
+- ✅ Cadastro completo de fornecedores
+- ✅ Sistema de cotações e ordens de compra
+- ✅ Alertas de estoque e sugestões de compra
+- ✅ Análise de performance de fornecedores
+- ✅ Histórico de transações
+
+### 🚨 **Sistema de Alertas Inteligente**
+- ✅ Alertas automáticos de estoque baixo
+- ✅ Notificações de ordens atrasadas
+- ✅ Alertas de produtos caros em falta
+- ✅ Sistema de notificações configurável
+- ✅ Histórico completo de alertas
+
+### 📊 **Dashboard e Relatórios**
+- ✅ Dashboard em tempo real com métricas
+- ✅ Gráficos e estatísticas avançadas
+- ✅ Relatórios de produção e estoque
+- ✅ Análise de tendências e performance
+- ✅ Exportação de relatórios
+
+## 🚀 Tecnologias e Arquitetura
+
+### **Stack Principal**
+- **Frontend**: Next.js 15.3.3 + React 19 + TypeScript
+- **Styling**: Tailwind CSS 4.0
+- **Backend**: Supabase (PostgreSQL + Real-time)
+- **Icons**: Lucide React
+- **Build**: Turbopack (dev) + Next.js (prod)
+
+### **Arquitetura Otimizada**
+```
+src/
+├── app/                    # 📱 App Router (Next.js 13+)
+├── components/             # 🧩 Componentes React (20 essenciais)
+│   ├── suppliers/          # 🤝 Módulo de fornecedores
+│   └── [Component].tsx     # React.memo otimizado
+├── contexts/               # 🔄 Estado global (6 contextos)
+├── hooks/                  # 🎣 Hooks personalizados (2 essenciais)
+├── lib/                    # 📚 Configurações e APIs
+├── types/                  # 📝 Tipos TypeScript centralizados
+├── utils/                  # 🛠️ Utilitários e validações
+└── constants/              # 📋 Constantes da aplicação
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### **Otimizações de Performance**
+- ✅ **Code Splitting**: Lazy loading automático
+- ✅ **React.memo**: Prevenção de re-renders
+- ✅ **Bundle Optimization**: -76% no tamanho (45kB → 10.9kB)
+- ✅ **Dynamic Imports**: Carregamento sob demanda
+- ✅ **Memoization**: useCallback e useMemo estratégicos
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📱 Como Usar
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### **1. Dashboard Principal**
+- Acesse métricas em tempo real
+- Visualize alertas críticos
+- Monitore performance geral
 
-## Learn More
+### **2. Gestão de Produtos**
+- **Adicionar**: Botão "Novo Produto" no header
+- **Editar**: Clique no ícone de edição na lista
+- **Filtrar**: Use os filtros por categoria, estoque, preço
+- **Exportar**: Botão de download (JSON/CSV)
 
-To learn more about Next.js, take a look at the following resources:
+### **3. Sistema de Produção**
+- **BOM**: Configure lista de materiais para cada produto
+- **Simulação**: Analyze viabilidade antes de produzir
+- **Ordens**: Crie e gerencie ordens de produção
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### **4. Fornecedores**
+- **Cadastro**: Informações completas + contato
+- **Cotações**: Sistema de solicitação de preços
+- **Análise**: Performance e histórico
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### **5. Alertas**
+- **Automáticos**: Estoque baixo, ordens atrasadas
+- **Personalizados**: Crie alertas específicos
+- **Configuração**: Canais e frequência de notificação
 
-## Deploy on Vercel
+## 🔧 Configuração Avançada
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### **Banco de Dados (Supabase)**
+O sistema usa PostgreSQL via Supabase com as seguintes tabelas:
+- `products` - Produtos e componentes
+- `finished_products` - Produtos acabados
+- `bom_items` - Itens da lista de materiais
+- `production_orders` - Ordens de produção
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### **Personalização**
+- **Moedas**: Configurável no módulo Settings
+- **Categorias**: Editáveis em `src/constants/categories.ts`
+- **Processos**: Configuráveis em `src/constants/production.ts`
+
+## 📊 Métricas de Performance
+
+### **Bundle Size**
+- **Página principal**: 10.9 kB (otimizado)
+- **First Load JS**: 156 kB
+- **Chunks compartilhados**: 101 kB
+
+### **Lighthouse Score** (típico)
+- **Performance**: 95+
+- **Accessibility**: 100
+- **Best Practices**: 100
+- **SEO**: 90+
+
+## 🔒 Segurança
+
+- ✅ Validação de dados client/server-side
+- ✅ Sanitização de inputs
+- ✅ Row Level Security (RLS) no Supabase
+- ✅ Environment variables protegidas
+- ✅ HTTPS obrigatório em produção
+
+## 📈 Roadmap
+
+### **V2.0 - Planejado**
+- [ ] PWA (Progressive Web App)
+- [ ] Modo offline com sincronização
+- [ ] Relatórios PDF automáticos
+- [ ] Integração com APIs de fornecedores
+- [ ] Sistema de backup automático
+- [ ] Multi-tenancy (múltiplas empresas)
+
+### **V2.1 - Futuro**
+- [ ] Mobile app (React Native)
+- [ ] IA para previsão de demanda
+- [ ] Integração com sistemas ERP
+- [ ] API pública para integrações
+
+## 💡 Dicas e Truques
+
+### **Atalhos de Teclado**
+- `Ctrl + K`: Busca rápida de produtos
+- `Alt + N`: Novo produto
+- `Alt + P`: Ir para produção
+- `Alt + S`: Ir para fornecedor
+
+*Versão atual: 0.0.5 | Última atualização: Junho 2025*

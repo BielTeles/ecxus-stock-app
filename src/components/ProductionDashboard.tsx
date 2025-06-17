@@ -1,7 +1,7 @@
 'use client'
 
 import { Factory, Package, TrendingUp, AlertTriangle, Plus, Settings, List, X, Trash2, BarChart3, Play, Calculator, History, Zap } from 'lucide-react'
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { useProduction } from '@/contexts/ProductionContext'
 import { useProducts } from '@/contexts/ProductContextV3'
 import { PROCESS_COLORS, STATUS_COLORS } from '@/constants/production'
@@ -279,7 +279,7 @@ function BOMModal({ isOpen, onClose, finishedProductId }: BOMModalProps) {
   )
 }
 
-export default function ProductionDashboard({ onAddFinishedProduct }: ProductionDashboardProps) {
+function ProductionDashboard({ onAddFinishedProduct }: ProductionDashboardProps) {
   const { finishedProducts, getDashboardData, analyzeProduction } = useProduction()
   const { products, updateProduct } = useProducts()
   
@@ -924,4 +924,6 @@ export default function ProductionDashboard({ onAddFinishedProduct }: Production
       />
     </div>
   )
-} 
+}
+
+export default memo(ProductionDashboard) 
