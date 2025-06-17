@@ -13,4 +13,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withBundleAnalyzer(nextConfig);
+// Aplica o Bundle Analyzer apenas quando solicitado
+export default process.env.ANALYZE === 'true' 
+  ? withBundleAnalyzer(nextConfig) 
+  : nextConfig;
