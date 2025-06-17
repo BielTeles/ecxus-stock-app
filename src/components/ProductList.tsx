@@ -23,7 +23,7 @@ type StockFilter = 'all' | 'low' | 'adequate' | 'critical'
 // Tipos para movimentação
 interface StockMovement {
   id: string
-  productId: string
+  productId: number
   type: 'entrada' | 'saida'
   quantity: number
   reason: string
@@ -86,15 +86,15 @@ function ProductList({ searchTerm }: ProductListProps) {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
 
   // Novos estados para melhorias
-  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
+  const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set())
   const [isBulkMode, setIsBulkMode] = useState(false)
-  const [editingQuantity, setEditingQuantity] = useState<{ [key: string]: number }>({})
+  const [editingQuantity, setEditingQuantity] = useState<{ [key: number]: number }>({})
   const [movementHistory, setMovementHistory] = useState<StockMovement[]>([])
   const [quickMovementType, setQuickMovementType] = useState<'entrada' | 'saida'>('entrada')
   const [showMovementHistory, setShowMovementHistory] = useState(false)
   
   // Refs para inputs inline
-  const quantityInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({})
+  const quantityInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({})
 
   // Funções de manipulação
   const handleViewProduct = (product: Product) => {
@@ -192,7 +192,7 @@ function ProductList({ searchTerm }: ProductListProps) {
   }
 
   // Edição inline de quantidade
-  const handleInlineQuantityEdit = (productId: string, newQuantity: number) => {
+  const handleInlineQuantityEdit = (productId: number, newQuantity: number) => {
     const product = products.find(p => p.id === productId)
     if (!product) return
     
@@ -223,7 +223,7 @@ function ProductList({ searchTerm }: ProductListProps) {
   }
 
   // Seleção múltipla
-  const toggleProductSelection = (productId: string) => {
+  const toggleProductSelection = (productId: number) => {
     setSelectedProducts(prev => {
       const newSet = new Set(prev)
       if (newSet.has(productId)) {
@@ -454,7 +454,7 @@ function ProductList({ searchTerm }: ProductListProps) {
 
       {/* Controls */}
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between">
           {/* Left Side - Filters */}
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <div className="flex items-center space-x-2">
@@ -569,16 +569,20 @@ function ProductList({ searchTerm }: ProductListProps) {
               </button>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <div className="text-sm text-gray-600">
+            {/* Export/Import Actions */}
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-600 whitespace-nowrap">
                 {filteredProducts.length} de {products.length} produtos
               </div>
               
-              {/* Export/Import Actions */}
-              <div className="flex items-center space-x-2 ml-4">
+              <div className="flex items-center space-x-2 border-l border-gray-200 pl-4">
                 <div className="relative group">
-                  <button className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                  <button 
+                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
+                    title="Exportar dados"
+                  >
                     <Download className="h-4 w-4" />
+                    <span className="text-sm">Exportar</span>
                   </button>
                   <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
                     <div className="p-2">
@@ -602,15 +606,16 @@ function ProductList({ searchTerm }: ProductListProps) {
                 
                 <button
                   onClick={() => setIsImportModalOpen(true)}
-                  className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                  className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors border border-gray-200"
                   title="Importar dados"
                 >
                   <Upload className="h-4 w-4" />
+                  <span className="text-sm">Importar</span>
                 </button>
               </div>
             </div>
-                  </div>
-      </div>
+          </div>
+        </div>
 
       {/* Barra de Ações em Lote */}
       {isBulkMode && selectedProducts.size > 0 && (
@@ -722,7 +727,7 @@ function ProductList({ searchTerm }: ProductListProps) {
         </div>
       )}
 
-      {/* Advanced Filters */}
+        {/* Advanced Filters */}
         {showAdvancedFilters && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -773,7 +778,7 @@ function ProductList({ searchTerm }: ProductListProps) {
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => {
-            const stockStatus = getStockStatus(product.quantity || 0, product.min_stock || 1)
+                          const stockStatus = getStockStatus(product.quantity || 0, product.min_stock || 1)
             const isSelected = selectedProducts.has(product.id)
             const isEditingQty = editingQuantity.hasOwnProperty(product.id)
             const totalValue = (product.quantity || 0) * (product.sell_price || 0)
@@ -785,9 +790,9 @@ function ProductList({ searchTerm }: ProductListProps) {
                     ? 'border-purple-300 bg-purple-50' 
                     : 'border-gray-200 hover:border-gray-300'
                 }`}>
-                  {/* Product Image Placeholder */}
+                {/* Product Image Placeholder */}
                   <div className="h-32 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center relative">
-                    <Package className="h-12 w-12 text-blue-600" />
+                  <Package className="h-12 w-12 text-blue-600" />
                     {isBulkMode && (
                       <div className="absolute top-3 left-3">
                         <input
@@ -798,18 +803,18 @@ function ProductList({ searchTerm }: ProductListProps) {
                         />
                       </div>
                     )}
-                  </div>
-                  
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">{product.name}</h3>
-                        <p className="text-sm text-gray-600 font-mono">{product.code}</p>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${stockStatus.color}`}>
-                        {stockStatus.status === 'low' ? 'Crítico' : stockStatus.status === 'medium' ? 'Baixo' : 'Adequado'}
-                      </span>
+                </div>
+                
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">{product.name}</h3>
+                      <p className="text-sm text-gray-600 font-mono">{product.code}</p>
                     </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${stockStatus.color}`}>
+                        {stockStatus.status === 'low' ? 'Crítico' : stockStatus.status === 'medium' ? 'Baixo' : 'Adequado'}
+                    </span>
+                  </div>
                     
                     {/* Estoque com edição inline e botões rápidos */}
                     <div className="bg-gray-50 rounded-lg p-4 mb-4">
@@ -838,7 +843,7 @@ function ProductList({ searchTerm }: ProductListProps) {
                       {isEditingQty ? (
                         <div className="flex items-center space-x-2">
                           <input
-                            ref={(el) => quantityInputRefs.current[product.id] = el}
+                            ref={(el) => { quantityInputRefs.current[product.id] = el }}
                             type="number"
                             min="0"
                             defaultValue={editingQuantity[product.id]}
@@ -896,71 +901,71 @@ function ProductList({ searchTerm }: ProductListProps) {
                           ></div>
                         </div>
                       </div>
+                  </div>
+                  
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Package className="h-4 w-4 mr-2 text-gray-400" />
+                      <span className="truncate">{product.category}</span>
                     </div>
-                    
-                    <div className="space-y-3 mb-4">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Package className="h-4 w-4 mr-2 text-gray-400" />
-                        <span className="truncate">{product.category}</span>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                      <span className="font-mono">{product.location}</span>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Preço unitário</p>
+                        <p className="font-semibold text-gray-900">{formatCurrency(product.sell_price || 0)}</p>
                       </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                        <span className="font-mono">{product.location}</span>
+                      <div>
+                        <p className="text-xs text-gray-500">Valor total</p>
+                        <p className="font-semibold text-green-600">{formatCurrency(totalValue)}</p>
                       </div>
                     </div>
 
-                    <div className="border-t pt-4">
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <p className="text-xs text-gray-500">Preço unitário</p>
-                          <p className="font-semibold text-gray-900">{formatCurrency(product.sell_price || 0)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Valor total</p>
-                          <p className="font-semibold text-green-600">{formatCurrency(totalValue)}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-gray-500 truncate flex-1 mr-2">
-                          {product.supplier || 'Sem fornecedor'}
-                        </p>
-                        <div className="flex space-x-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => handleViewProduct(product)}
-                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                            title="Ver detalhes"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button 
-                            onClick={() => handleStockMovement(product)}
-                            className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
-                            title="Movimentar estoque"
-                          >
-                            <ArrowUpCircle className="h-4 w-4" />
-                          </button>
-                          <button 
-                            onClick={() => handleDuplicateProduct(product)}
-                            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
-                            title="Duplicar produto"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </button>
-                          <button 
-                            onClick={() => handleEditProduct(product)}
-                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                            title="Editar produto"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteProduct(product)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                            title="Excluir produto"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-500 truncate flex-1 mr-2">
+                        {product.supplier || 'Sem fornecedor'}
+                      </p>
+                      <div className="flex space-x-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleViewProduct(product)}
+                          className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                          title="Ver detalhes"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleStockMovement(product)}
+                          className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
+                          title="Movimentar estoque"
+                        >
+                          <ArrowUpCircle className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDuplicateProduct(product)}
+                          className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                          title="Duplicar produto"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleEditProduct(product)}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                          title="Editar produto"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteProduct(product)}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                          title="Excluir produto"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                         </div>
                       </div>
                     </div>
@@ -1206,11 +1211,11 @@ function ProductList({ searchTerm }: ProductListProps) {
             }}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Lado esquerdo - Formulário */}
-                <div className="space-y-4">
-                  <div>
+              <div className="space-y-4">
+                <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Tipo de Movimentação
-                    </label>
+                    Tipo de Movimentação
+                  </label>
                     <div className="grid grid-cols-2 gap-3">
                       <label className="flex items-center space-x-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-green-50 hover:border-green-300 transition-colors">
                         <input
@@ -1238,22 +1243,22 @@ function ProductList({ searchTerm }: ProductListProps) {
                         </div>
                       </label>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Quantidade
-                    </label>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Quantidade
+                  </label>
                     <div className="relative">
-                      <input
-                        type="number"
-                        name="quantity"
-                        min="1"
-                        required
+                  <input
+                    type="number"
+                    name="quantity"
+                    min="1"
+                    required
                         className="w-full border border-gray-300 rounded-lg px-4 py-3 text-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Digite a quantidade"
+                    placeholder="Digite a quantidade"
                         autoFocus
-                      />
+                  />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-1">
                         <button
                           type="button"
@@ -1287,18 +1292,18 @@ function ProductList({ searchTerm }: ProductListProps) {
                         </button>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Motivo/Observação
-                    </label>
-                    <textarea
-                      name="reason"
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Motivo/Observação
+                  </label>
+                  <textarea
+                    name="reason"
                       rows={4}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="Ex: Recebimento de compra, Uso em produção, Ajuste de inventário..."
-                    />
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Ex: Recebimento de compra, Uso em produção, Ajuste de inventário..."
+                  />
                     
                     {/* Sugestões de motivos */}
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -1347,9 +1352,9 @@ function ProductList({ searchTerm }: ProductListProps) {
                         <span className="text-gray-600">Fornecedor:</span>
                         <span className="text-gray-900">{stockMovementProduct.supplier || 'Não informado'}</span>
                       </div>
-                    </div>
-                  </div>
-                  
+                </div>
+              </div>
+              
                   <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
                     <h4 className="font-medium text-blue-900 mb-3 flex items-center">
                       <Package className="h-4 w-4 mr-2" />
@@ -1506,6 +1511,6 @@ function ProductList({ searchTerm }: ProductListProps) {
       )}
     </div>
   )
-}
+} 
 
 export default memo(ProductList) 

@@ -90,7 +90,28 @@ export class DataMigrator {
       const supabaseProducts = await ProductsAPI.getAll()
       
       // Se não há dados no Supabase mas há no localStorage, precisamos migrar
-      return supabaseProducts.length === 0 && localProducts.length > 0
+      if (supabaseProducts.length === 0 && localProducts.length > 0) {
+        return true
+      }
+
+      // Se há dados em ambos, verificar se são consistentes
+      // Se o localStorage tem produtos que não estão no Supabase (e vice-versa), pode precisar de migração
+      if (supabaseProducts.length > 0 && localProducts.length > 0) {
+        // Verificar se os dados são consistentes (mesmo número de produtos)
+        // Se forem muito diferentes, pode ser que o localStorage tenha dados antigos
+        const sizeDifference = Math.abs(supabaseProducts.length - localProducts.length)
+        const percentageDifference = sizeDifference / Math.max(supabaseProducts.length, localProducts.length)
+        
+        // Se a diferença for maior que 20%, pode ser que há dados desatualizados
+        if (percentageDifference > 0.2) {
+          console.log(`⚠️ Diferença significativa entre Supabase (${supabaseProducts.length}) e localStorage (${localProducts.length})`)
+          // Neste caso, vamos atualizar o localStorage com os dados do Supabase
+          this.syncToLocalStorage()
+          return false
+        }
+      }
+      
+      return false
     } catch (error) {
       console.error('Erro ao verificar migração:', error)
       return false
@@ -140,6 +161,63 @@ export class DataMigrator {
     } catch (error) {
       console.error('Erro ao restaurar backup:', error)
       return false
+    }
+  }
+
+  // Limpar dados órfãos do localStorage
+  static async cleanOrphanedData(): Promise<void> {
+    try {
+      console.log('🧹 Limpando dados órfãos do localStorage...')
+      
+      // Buscar dados atuais do Supabase
+      const supabaseProducts = await ProductsAPI.getAll()
+      
+      // Sincronizar localStorage com dados atuais do Supabase
+      this.syncToLocalStorage()
+      
+      console.log(`✅ localStorage sincronizado com ${supabaseProducts.length} produtos do Supabase`)
+    } catch (error) {
+      console.error('❌ Erro ao limpar dados órfãos:', error)
+    }
+  }
+
+  // Verificar e corrigir inconsistências
+  static async verifyAndFixConsistency(): Promise<{ fixed: boolean; message: string }> {
+    try {
+      const localData = localStorage.getItem('ecxus-stock-products')
+      const supabaseProducts = await ProductsAPI.getAll()
+
+      if (!localData) {
+        // Não há dados locais, sincronizar do Supabase
+        this.syncToLocalStorage()
+        return { fixed: true, message: 'localStorage sincronizado com Supabase' }
+      }
+
+      const localProducts = JSON.parse(localData)
+      
+      if (supabaseProducts.length === 0 && localProducts.length > 0) {
+        return { fixed: false, message: 'Dados encontrados apenas no localStorage - migração necessária' }
+      }
+
+      if (supabaseProducts.length > 0 && localProducts.length === 0) {
+        // Supabase tem dados, localStorage vazio - sincronizar
+        this.syncToLocalStorage()
+        return { fixed: true, message: 'localStorage vazio sincronizado com Supabase' }
+      }
+
+      // Ambos têm dados - verificar consistência
+      const sizeDifference = Math.abs(supabaseProducts.length - localProducts.length)
+      if (sizeDifference > 0) {
+        console.log(`📊 Diferença detectada: Supabase(${supabaseProducts.length}) vs localStorage(${localProducts.length})`)
+        // Sincronizar localStorage com Supabase (fonte da verdade)
+        this.syncToLocalStorage()
+        return { fixed: true, message: `Inconsistência corrigida: ${sizeDifference} produtos ajustados` }
+      }
+
+      return { fixed: false, message: 'Dados consistentes - nenhuma ação necessária' }
+    } catch (error) {
+      console.error('Erro ao verificar consistência:', error)
+      return { fixed: false, message: 'Erro ao verificar consistência' }
     }
   }
 } 

@@ -21,6 +21,9 @@ interface ProductContextType {
   getLowStockProducts: () => Product[]
   getCategories: () => string[]
   getStats: () => { total: number; lowStock: number; zeroStock: number }
+  exportData: () => string
+  importData: (data: string) => boolean
+  clearAllData: () => void
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined)
@@ -30,6 +33,34 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Sincronizar produtos para localStorage
+  const syncToLocalStorage = useCallback((products: Product[]) => {
+    try {
+      // Mapear para o formato do localStorage
+      const localFormat = products.map(product => ({
+        id: product.id,
+        name: product.name,
+        code: product.code,
+        description: product.description,
+        category: product.category,
+        quantity: product.quantity,
+        unit: product.unit,
+        costPrice: product.purchase_price,
+        price: product.sell_price,
+        minStock: product.min_stock,
+        location: product.location,
+        supplier: product.supplier,
+        createdAt: product.created_at,
+        updatedAt: product.updated_at
+      }))
+
+      localStorage.setItem('ecxus-stock-products', JSON.stringify(localFormat))
+      console.log(`✅ Sincronizados ${localFormat.length} produtos para localStorage`)
+    } catch (error) {
+      console.error('❌ Erro ao sincronizar para localStorage:', error)
+    }
+  }, [])
+
   // Carregar produtos na inicialização
   const loadProducts = useCallback(async () => {
     try {
@@ -37,6 +68,8 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       setError(null)
       const data = await ProductsAPI.getAll()
       setProducts(data)
+      // Sincronizar para localStorage após carregar do Supabase
+      syncToLocalStorage(data)
     } catch (err) {
       console.error('Erro ao carregar produtos:', err)
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
@@ -54,7 +87,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [syncToLocalStorage])
 
   // Carregar produtos na inicialização
   useEffect(() => {
@@ -66,39 +99,49 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     try {
       setError(null)
       const newProduct = await ProductsAPI.create(productData)
-      setProducts(prev => [newProduct, ...prev])
+      const updatedProducts = [newProduct, ...products]
+      setProducts(updatedProducts)
+      // Sincronizar para localStorage
+      syncToLocalStorage(updatedProducts)
     } catch (err) {
       console.error('Erro ao adicionar produto:', err)
       setError(err instanceof Error ? err.message : 'Erro ao adicionar produto')
       throw err
     }
-  }, [])
+  }, [products, syncToLocalStorage])
 
   // Atualizar produto
   const updateProduct = useCallback(async (id: number, productData: Partial<ProductInsert>) => {
     try {
       setError(null)
       const updatedProduct = await ProductsAPI.update(id, productData)
-      setProducts(prev => prev.map(p => p.id === id ? updatedProduct : p))
+      const updatedProducts = products.map(p => p.id === id ? updatedProduct : p)
+      setProducts(updatedProducts)
+      // Sincronizar para localStorage
+      syncToLocalStorage(updatedProducts)
     } catch (err) {
       console.error('Erro ao atualizar produto:', err)
       setError(err instanceof Error ? err.message : 'Erro ao atualizar produto')
       throw err
     }
-  }, [])
+  }, [products, syncToLocalStorage])
 
   // Deletar produto
   const deleteProduct = useCallback(async (id: number) => {
     try {
       setError(null)
       await ProductsAPI.delete(id)
-      setProducts(prev => prev.filter(p => p.id !== id))
+      const updatedProducts = products.filter(p => p.id !== id)
+      setProducts(updatedProducts)
+      // Sincronizar para localStorage (removendo o produto deletado)
+      syncToLocalStorage(updatedProducts)
+      console.log(`🗑️ Produto ${id} removido do Supabase e localStorage`)
     } catch (err) {
       console.error('Erro ao deletar produto:', err)
       setError(err instanceof Error ? err.message : 'Erro ao deletar produto')
       throw err
     }
-  }, [])
+  }, [products, syncToLocalStorage])
 
   // Buscar produto por ID
   const getProductById = useCallback((id: number) => {
@@ -110,13 +153,16 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     try {
       setError(null)
       const updatedProduct = await ProductsAPI.updateStock(id, newQuantity)
-      setProducts(prev => prev.map(p => p.id === id ? updatedProduct : p))
+      const updatedProducts = products.map(p => p.id === id ? updatedProduct : p)
+      setProducts(updatedProducts)
+      // Sincronizar para localStorage
+      syncToLocalStorage(updatedProducts)
     } catch (err) {
       console.error('Erro ao atualizar estoque:', err)
       setError(err instanceof Error ? err.message : 'Erro ao atualizar estoque')
       throw err
     }
-  }, [])
+  }, [products, syncToLocalStorage])
 
   // Produtos com estoque baixo
   const getLowStockProducts = useCallback(() => {
@@ -148,6 +194,42 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     setError(null)
   }, [])
 
+  // Exportar dados
+  const exportData = useCallback(() => {
+    const exportObject = {
+      products: products,
+      exportedAt: new Date().toISOString(),
+      version: '1.0'
+    }
+    return JSON.stringify(exportObject, null, 2)
+  }, [products])
+
+  // Importar dados
+  const importData = useCallback((data: string): boolean => {
+    try {
+      const parsed = JSON.parse(data)
+      
+      if (!parsed.products || !Array.isArray(parsed.products)) {
+        throw new Error('Formato de dados inválido: produtos não encontrados')
+      }
+
+      setProducts(parsed.products as Product[])
+      syncToLocalStorage(parsed.products as Product[])
+      return true
+    } catch (error) {
+      console.error('Erro ao importar dados:', error)
+      return false
+    }
+  }, [syncToLocalStorage])
+
+  // Limpar todos os dados
+  const clearAllData = useCallback(() => {
+    setProducts([])
+    localStorage.removeItem('ecxus-stock-products')
+    localStorage.removeItem('ecxus-backup-products')
+    console.log('🗑️ Todos os dados de produtos foram limpos')
+  }, [])
+
   const value: ProductContextType = {
     products,
     isLoading,
@@ -161,7 +243,10 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     updateStock,
     getLowStockProducts,
     getCategories,
-    getStats
+    getStats,
+    exportData,
+    importData,
+    clearAllData
   }
 
   return (

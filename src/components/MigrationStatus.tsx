@@ -13,6 +13,10 @@ export default function MigrationStatus() {
     migrated: number
     errors: string[]
   } | null>(null)
+  const [consistencyResult, setConsistencyResult] = useState<{
+    fixed: boolean
+    message: string
+  } | null>(null)
 
   useEffect(() => {
     checkMigrationStatus()
@@ -21,8 +25,17 @@ export default function MigrationStatus() {
   const checkMigrationStatus = async () => {
     try {
       setIsLoading(true)
+      setConsistencyResult(null)
+      
+      // Primeiro, verificar e corrigir inconsistências
+      const consistency = await DataMigrator.verifyAndFixConsistency()
+      setConsistencyResult(consistency)
+      
+      // Depois verificar se ainda precisa de migração
       const needs = await DataMigrator.needsMigration()
       setNeedsMigration(needs)
+      
+      console.log(`🔍 Status: migração=${needs}, consistência=${consistency.message}`)
     } catch (error) {
       console.error('Erro ao verificar status de migração:', error)
     } finally {
@@ -55,6 +68,19 @@ export default function MigrationStatus() {
     }
   }
 
+  const cleanOrphanedData = async () => {
+    try {
+      setIsLoading(true)
+      await DataMigrator.cleanOrphanedData()
+      // Recheck status
+      await checkMigrationStatus()
+    } catch (error) {
+      console.error('Erro ao limpar dados órfãos:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="fixed bottom-4 right-4 bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-lg max-w-sm">
@@ -74,7 +100,26 @@ export default function MigrationStatus() {
           <span className="text-sm text-green-700">Sistema usando Supabase</span>
         </div>
         <div className="mt-2 text-xs text-green-600">
-          Dados sincronizados com o banco
+          {consistencyResult?.message || 'Dados sincronizados com o banco'}
+        </div>
+        {consistencyResult?.fixed && (
+          <div className="mt-1 text-xs text-blue-600">
+            ✅ Inconsistências corrigidas automaticamente
+          </div>
+        )}
+        <div className="flex space-x-2 mt-2">
+          <button
+            onClick={checkMigrationStatus}
+            className="text-xs underline hover:no-underline text-green-700"
+          >
+            Verificar Status
+          </button>
+          <button
+            onClick={cleanOrphanedData}
+            className="text-xs underline hover:no-underline text-blue-700"
+          >
+            Sincronizar Dados
+          </button>
         </div>
       </div>
     )
