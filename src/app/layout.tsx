@@ -40,7 +40,26 @@ export default function RootLayout({
               <ProductionProvider>
                 <ProductionOrderProvider>
                   <AlertProvider>
-                    {children}
+                    <div className="min-h-screen flex flex-col">
+                      <div className="flex-1">
+                        {children}
+                      </div>
+                      
+                      {/* Footer */}
+                      <footer className="bg-white border-t border-gray-200 py-4 px-4">
+                        <div className="max-w-7xl mx-auto">
+                          <div className="text-center">
+                            <p className="text-sm text-gray-500">
+                              Desenvolvido por{' '}
+                              <span className="font-medium text-gray-700">Gabriel Teles</span>
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              Ecxus Stock © {new Date().getFullYear()}
+                            </p>
+                          </div>
+                        </div>
+                      </footer>
+                    </div>
                   </AlertProvider>
                 </ProductionOrderProvider>
               </ProductionProvider>
