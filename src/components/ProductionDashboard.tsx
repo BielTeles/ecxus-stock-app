@@ -178,10 +178,10 @@ function BOMModal({ isOpen, onClose, finishedProductId }: BOMModalProps) {
           {/* BOM List */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900">
-              Lista de Materiais ({finishedProduct.bom.length} {finishedProduct.bom.length === 1 ? 'item' : 'itens'})
+              Lista de Materiais ({(finishedProduct.bom || []).length} {(finishedProduct.bom || []).length === 1 ? 'item' : 'itens'})
             </h3>
 
-            {finishedProduct.bom.length === 0 ? (
+            {(!finishedProduct.bom || finishedProduct.bom.length === 0) ? (
               <div className="text-center py-8 text-gray-500">
                 <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <p>Nenhum componente adicionado à BOM</p>
@@ -189,12 +189,12 @@ function BOMModal({ isOpen, onClose, finishedProductId }: BOMModalProps) {
               </div>
             ) : (
               <div className="space-y-2">
-                {finishedProduct.bom.map((bomItem) => {
+                {(finishedProduct.bom || []).map((bomItem) => {
                   const component = getComponentById(bomItem.componentId)
                   if (!component) return null
 
-                  const subtotal = component.price * bomItem.quantity
-                  const available = component.quantity
+                  const subtotal = (component.sell_price || 0) * bomItem.quantity
+                  const available = component.quantity || 0
                   const needed = bomItem.quantity
                   const canProduce = Math.floor(available / needed)
 
@@ -218,7 +218,7 @@ function BOMModal({ isOpen, onClose, finishedProductId }: BOMModalProps) {
                           <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
                             <span>Código: {component.code}</span>
                             <span>Qtd: {bomItem.quantity}</span>
-                            <span>Unit: R$ {component.price.toFixed(2)}</span>
+                            <span>Unit: R$ {(component.sell_price || 0).toFixed(2)}</span>
                             <span className="font-medium">Subtotal: R$ {subtotal.toFixed(2)}</span>
                           </div>
                         </div>
@@ -323,7 +323,7 @@ function ProductionDashboard({ onAddFinishedProduct }: ProductionDashboardProps)
         if (!component) throw new Error(`Componente ${bomItem.componentId} não encontrado`)
 
         const requiredQuantity = bomItem.quantity * quantity
-        const newQuantity = component.quantity - requiredQuantity
+        const newQuantity = (component.quantity || 0) - requiredQuantity
 
         if (newQuantity < 0) {
           throw new Error(`Estoque insuficiente do componente ${component.name}`)

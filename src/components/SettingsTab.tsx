@@ -12,6 +12,7 @@ import { useSuppliers } from '@/contexts/SupplierContext'
 import { useProduction } from '@/contexts/ProductionContext'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useCurrency } from '@/hooks/useCurrency'
+import OmieIntegration from './OmieIntegration'
 
 type SettingsSection = 'general' | 'system' | 'users' | 'security' | 'backup' | 'monitoring' | 'notifications' | 'logs' | 'integrations' | 'performance'
 
@@ -42,6 +43,7 @@ export default function SettingsTab() {
   
   const [activeSection, setActiveSection] = useState<SettingsSection>('general')
   const [showPasswords, setShowPasswords] = useState(false)
+  const [showOmieIntegration, setShowOmieIntegration] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -543,12 +545,106 @@ export default function SettingsTab() {
     </div>
   )
 
+  const renderIntegrationsSection = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <Globe className="h-5 w-5 mr-2 text-blue-600" />
+          Integrações Externas
+        </h3>
+        <p className="text-gray-600 mb-6">
+          Configure integrações com sistemas externos para sincronizar dados automaticamente.
+        </p>
+
+        {/* Integração Omie */}
+        <div className="border border-gray-200 rounded-lg p-6 mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Database className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <h4 className="text-lg font-medium text-gray-900">ERP Omie</h4>
+                <p className="text-sm text-gray-500">
+                  Sincronize produtos do seu ERP Omie automaticamente
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
+                Disponível
+              </span>
+              <button
+                onClick={() => setShowOmieIntegration(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              >
+                <Settings className="h-4 w-4" />
+                <span>Configurar</span>
+              </button>
+            </div>
+          </div>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h5 className="font-medium text-blue-900 mb-2">Recursos disponíveis:</h5>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• Sincronização automática de produtos</li>
+              <li>• Mapeamento de categorias e famílias</li>
+              <li>• Importação de preços e especificações</li>
+              <li>• Controle de produtos ativos/inativos</li>
+              <li>• Histórico de sincronizações</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Outras integrações futuras */}
+        <div className="border border-gray-200 rounded-lg p-6 opacity-50">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Server className="h-6 w-6 text-gray-400" />
+              </div>
+              <div>
+                <h4 className="text-lg font-medium text-gray-500">SAP Business One</h4>
+                <p className="text-sm text-gray-400">
+                  Integração com SAP em desenvolvimento
+                </p>
+              </div>
+            </div>
+            <span className="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-sm">
+              Em breve
+            </span>
+          </div>
+        </div>
+
+        <div className="border border-gray-200 rounded-lg p-6 opacity-50">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                <BarChart3 className="h-6 w-6 text-gray-400" />
+              </div>
+              <div>
+                <h4 className="text-lg font-medium text-gray-500">Power BI</h4>
+                <p className="text-sm text-gray-400">
+                  Dashboards e relatórios avançados
+                </p>
+              </div>
+            </div>
+            <span className="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-sm">
+              Planejado
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
   const renderSection = () => {
     switch (activeSection) {
       case 'general': return renderGeneralSettings()
       case 'system': return renderSystemMetrics()
       case 'backup': return renderBackupSection()
       case 'logs': return renderLogsSection()
+      case 'integrations': return renderIntegrationsSection()
       case 'users':
         return <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Gerenciamento de Usuários</h3>
@@ -559,12 +655,28 @@ export default function SettingsTab() {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Configurações de Segurança</h3>
           <p className="text-gray-600">Funcionalidade em desenvolvimento...</p>
         </div>
+      case 'monitoring':
+        return <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Monitoramento do Sistema</h3>
+          <p className="text-gray-600">Funcionalidade em desenvolvimento...</p>
+        </div>
+      case 'notifications':
+        return <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Configurações de Notificações</h3>
+          <p className="text-gray-600">Funcionalidade em desenvolvimento...</p>
+        </div>
+      case 'performance':
+        return <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Otimização de Performance</h3>
+          <p className="text-gray-600">Funcionalidade em desenvolvimento...</p>
+        </div>
       default:
         return <div>Seção não encontrada</div>
     }
   }
 
   return (
+    <>
     <div className="flex h-full">
       {/* Sidebar */}
       <div className="w-64 bg-white border-r border-gray-200 p-4">
@@ -601,5 +713,12 @@ export default function SettingsTab() {
         {renderSection()}
       </div>
     </div>
+
+    {/* Modal de Integração Omie */}
+    <OmieIntegration 
+      isOpen={showOmieIntegration}
+      onClose={() => setShowOmieIntegration(false)}
+    />
+  </>
   )
 } 

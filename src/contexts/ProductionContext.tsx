@@ -151,17 +151,20 @@ export function ProductionProvider({ children }: { children: ReactNode }) {
     let maxProducible = Infinity
     let totalCost = 0
 
-    if (product.bom && Array.isArray(product.bom)) {
+    if (product.bom && Array.isArray(product.bom) && product.bom.length > 0) {
       for (const bomItem of product.bom) {
         const component = products.find(c => c.id === bomItem.componentId)
-        if (!component) continue
+        if (!component) {
+          console.warn(`Componente com ID ${bomItem.componentId} não encontrado`)
+          continue
+        }
 
-        const available = component.quantity
+        const available = component.quantity || 0
         const needed = bomItem.quantity
         const canProduce = Math.floor(available / needed)
 
         maxProducible = Math.min(maxProducible, canProduce)
-        totalCost += component.sell_price * needed
+        totalCost += (component.sell_price || 0) * needed
 
         if (canProduce === 0) {
           missingComponents.push({
@@ -198,12 +201,12 @@ export function ProductionProvider({ children }: { children: ReactNode }) {
     // Componentes mais usados
     const componentUsage = new Map<number, number>()
     finishedProducts.forEach(product => {
-      if (product.bom && Array.isArray(product.bom)) {
-        product.bom.forEach(bomItem => {
-          const current = componentUsage.get(bomItem.componentId) || 0
-          componentUsage.set(bomItem.componentId, current + 1)
-        })
-      }
+      if (!product.bom || !Array.isArray(product.bom)) return
+      
+            product.bom.forEach(bomItem => {
+        const current = componentUsage.get(bomItem.componentId) || 0
+        componentUsage.set(bomItem.componentId, current + 1)
+      })
     })
 
     const mostUsedComponents = Array.from(componentUsage.entries())

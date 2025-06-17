@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo, useCallback, memo } from 'react'
-import { Edit, Trash2, MapPin, Package, Filter, Eye, Copy, Grid3X3, List, TrendingUp, TrendingDown, Minus, DollarSign, Calendar, Search, X, SlidersHorizontal, Download, Upload, ArrowUpCircle, ArrowDownCircle, History } from 'lucide-react'
+import { useState, useMemo, useCallback, memo, useRef } from 'react'
+import { Edit, Trash2, MapPin, Package, Filter, Eye, Copy, Grid3X3, List, TrendingUp, TrendingDown, Minus, DollarSign, Calendar, Search, X, SlidersHorizontal, Download, Upload, ArrowUpCircle, ArrowDownCircle, History, Plus, Check, AlertCircle, Zap, RotateCcw } from 'lucide-react'
 import { useProducts } from '@/contexts/ProductContextV3'
 import type { Database } from '@/lib/supabase'
 
@@ -19,6 +19,18 @@ interface ProductListProps {
 type ViewMode = 'grid' | 'list'
 type SortOption = 'name' | 'quantity' | 'price' | 'updated' | 'category'
 type StockFilter = 'all' | 'low' | 'adequate' | 'critical'
+
+// Tipos para movimentação
+interface StockMovement {
+  id: string
+  productId: string
+  type: 'entrada' | 'saida'
+  quantity: number
+  reason: string
+  date: string
+  previousQuantity: number
+  newQuantity: number
+}
 
 function ProductList({ searchTerm }: ProductListProps) {
   const { products, addProduct, deleteProduct, updateProduct } = useProducts()
@@ -73,6 +85,17 @@ function ProductList({ searchTerm }: ProductListProps) {
   const [isStockMovementModalOpen, setIsStockMovementModalOpen] = useState(false)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
 
+  // Novos estados para melhorias
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
+  const [isBulkMode, setIsBulkMode] = useState(false)
+  const [editingQuantity, setEditingQuantity] = useState<{ [key: string]: number }>({})
+  const [movementHistory, setMovementHistory] = useState<StockMovement[]>([])
+  const [quickMovementType, setQuickMovementType] = useState<'entrada' | 'saida'>('entrada')
+  const [showMovementHistory, setShowMovementHistory] = useState(false)
+  
+  // Refs para inputs inline
+  const quantityInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({})
+
   // Funções de manipulação
   const handleViewProduct = (product: Product) => {
     setViewingProduct(product)
@@ -125,7 +148,7 @@ function ProductList({ searchTerm }: ProductListProps) {
     setViewingProduct(null)
   }
 
-  // Novas funcionalidades
+  // Novas funcionalidades melhoradas
   const handleStockMovement = (product: Product) => {
     setStockMovementProduct(product)
     setIsStockMovementModalOpen(true)
@@ -134,6 +157,94 @@ function ProductList({ searchTerm }: ProductListProps) {
   const handleCloseStockMovementModal = () => {
     setIsStockMovementModalOpen(false)
     setStockMovementProduct(null)
+  }
+
+  // Ação rápida de entrada/saída
+  const handleQuickStockAction = (product: Product, type: 'entrada' | 'saida', quantity: number = 1) => {
+    const newQuantity = type === 'entrada' 
+      ? (product.quantity || 0) + quantity
+      : Math.max(0, (product.quantity || 0) - quantity)
+    
+    updateProduct(product.id, { quantity: newQuantity })
+    
+    // Registrar no histórico
+    const movement: StockMovement = {
+      id: Date.now().toString(),
+      productId: product.id,
+      type,
+      quantity,
+      reason: `Ação rápida - ${type}`,
+      date: new Date().toISOString(),
+      previousQuantity: product.quantity || 0,
+      newQuantity
+    }
+    
+    setMovementHistory(prev => [movement, ...prev.slice(0, 49)]) // Manter apenas os últimos 50
+    
+    // Feedback visual rápido
+    const element = document.getElementById(`product-${product.id}`)
+    if (element) {
+      element.classList.add('bg-green-50', 'border-green-200')
+      setTimeout(() => {
+        element.classList.remove('bg-green-50', 'border-green-200')
+      }, 1000)
+    }
+  }
+
+  // Edição inline de quantidade
+  const handleInlineQuantityEdit = (productId: string, newQuantity: number) => {
+    const product = products.find(p => p.id === productId)
+    if (!product) return
+    
+    updateProduct(productId, { quantity: Math.max(0, newQuantity) })
+    
+    // Registrar movimento se houve mudança significativa
+    const difference = newQuantity - (product.quantity || 0)
+    if (difference !== 0) {
+      const movement: StockMovement = {
+        id: Date.now().toString(),
+        productId,
+        type: difference > 0 ? 'entrada' : 'saida',
+        quantity: Math.abs(difference),
+        reason: 'Ajuste manual',
+        date: new Date().toISOString(),
+        previousQuantity: product.quantity || 0,
+        newQuantity
+      }
+      
+      setMovementHistory(prev => [movement, ...prev.slice(0, 49)])
+    }
+    
+    setEditingQuantity(prev => {
+      const newState = { ...prev }
+      delete newState[productId]
+      return newState
+    })
+  }
+
+  // Seleção múltipla
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProducts(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(productId)) {
+        newSet.delete(productId)
+      } else {
+        newSet.add(productId)
+      }
+      return newSet
+    })
+  }
+
+  // Ação em lote
+  const handleBulkStockAction = (type: 'entrada' | 'saida', quantity: number) => {
+    const selectedProductsList = products.filter(p => selectedProducts.has(p.id))
+    
+    selectedProductsList.forEach(product => {
+      handleQuickStockAction(product, type, quantity)
+    })
+    
+    setSelectedProducts(new Set())
+    setIsBulkMode(false)
   }
 
   const handleExportData = () => {
@@ -386,6 +497,42 @@ function ProductList({ searchTerm }: ProductListProps) {
 
           {/* Right Side - View Controls */}
           <div className="flex items-center space-x-4">
+            {/* Modo Lote */}
+            <button
+              onClick={() => setIsBulkMode(!isBulkMode)}
+              className={`flex items-center space-x-2 px-3 py-2 border rounded-lg transition-colors ${
+                isBulkMode 
+                  ? 'border-purple-500 text-purple-600 bg-purple-50' 
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Zap className="h-4 w-4" />
+              <span>Lote</span>
+              {selectedProducts.size > 0 && (
+                <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+                  {selectedProducts.size}
+                </span>
+              )}
+            </button>
+
+            {/* Histórico */}
+            <button
+              onClick={() => setShowMovementHistory(!showMovementHistory)}
+              className={`flex items-center space-x-2 px-3 py-2 border rounded-lg transition-colors ${
+                showMovementHistory 
+                  ? 'border-green-500 text-green-600 bg-green-50' 
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <History className="h-4 w-4" />
+              <span>Histórico</span>
+              {movementHistory.length > 0 && (
+                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                  {movementHistory.length}
+                </span>
+              )}
+            </button>
+
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">Ordenar:</span>
               <select
@@ -462,10 +609,120 @@ function ProductList({ searchTerm }: ProductListProps) {
                 </button>
               </div>
             </div>
+                  </div>
+      </div>
+
+      {/* Barra de Ações em Lote */}
+      {isBulkMode && selectedProducts.size > 0 && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm font-medium text-purple-900">
+                {selectedProducts.size} produto(s) selecionado(s)
+              </span>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => {
+                    const quantity = prompt('Quantidade para entrada:')
+                    if (quantity && !isNaN(Number(quantity))) {
+                      handleBulkStockAction('entrada', Number(quantity))
+                    }
+                  }}
+                  className="flex items-center space-x-1 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Entrada</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const quantity = prompt('Quantidade para saída:')
+                    if (quantity && !isNaN(Number(quantity))) {
+                      handleBulkStockAction('saida', Number(quantity))
+                    }
+                  }}
+                  className="flex items-center space-x-1 px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                >
+                  <Minus className="h-4 w-4" />
+                  <span>Saída</span>
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setSelectedProducts(new Set())
+                setIsBulkMode(false)
+              }}
+              className="text-purple-600 hover:text-purple-800 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
         </div>
+      )}
 
-        {/* Advanced Filters */}
+      {/* Histórico de Movimentações */}
+      {showMovementHistory && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <History className="h-5 w-5 text-green-600 mr-2" />
+              Histórico de Movimentações
+            </h3>
+            <button
+              onClick={() => setMovementHistory([])}
+              className="text-gray-400 hover:text-red-600 transition-colors"
+              title="Limpar histórico"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
+          </div>
+          
+          {movementHistory.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">Nenhuma movimentação registrada</p>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {movementHistory.map((movement) => {
+                const product = products.find(p => p.id === movement.productId)
+                return (
+                  <div key={movement.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-lg ${
+                        movement.type === 'entrada' 
+                          ? 'bg-green-100 text-green-600' 
+                          : 'bg-red-100 text-red-600'
+                      }`}>
+                        {movement.type === 'entrada' ? (
+                          <ArrowUpCircle className="h-4 w-4" />
+                        ) : (
+                          <ArrowDownCircle className="h-4 w-4" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {product?.name || 'Produto não encontrado'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {movement.type === 'entrada' ? 'Entrada' : 'Saída'} de {movement.quantity} unidades
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-900">
+                        {movement.previousQuantity} → {movement.newQuantity}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(movement.date).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Advanced Filters */}
         {showAdvancedFilters && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -516,110 +773,195 @@ function ProductList({ searchTerm }: ProductListProps) {
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => {
-                          const stockStatus = getStockStatus(product.quantity || 0, product.min_stock || 1)
+            const stockStatus = getStockStatus(product.quantity || 0, product.min_stock || 1)
+            const isSelected = selectedProducts.has(product.id)
+            const isEditingQty = editingQuantity.hasOwnProperty(product.id)
             const totalValue = (product.quantity || 0) * (product.sell_price || 0)
             
             return (
-              <div key={product.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 overflow-hidden group">
-                {/* Product Image Placeholder */}
-                <div className="h-32 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                  <Package className="h-12 w-12 text-blue-600" />
-                </div>
-                
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">{product.name}</h3>
-                      <p className="text-sm text-gray-600 font-mono">{product.code}</p>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${stockStatus.color}`}>
-                      {product.quantity} un.
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Package className="h-4 w-4 mr-2 text-gray-400" />
-                      <span className="truncate">{product.category}</span>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                      <span className="font-mono">{product.location}</span>
-                    </div>
-                    {product.description && (
-                      <p className="text-sm text-gray-600 line-clamp-2">{product.description}</p>
+              <div key={product.id} className="group" id={`product-${product.id}`}>
+                <div className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border-2 overflow-hidden ${
+                  isSelected 
+                    ? 'border-purple-300 bg-purple-50' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}>
+                  {/* Product Image Placeholder */}
+                  <div className="h-32 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center relative">
+                    <Package className="h-12 w-12 text-blue-600" />
+                    {isBulkMode && (
+                      <div className="absolute top-3 left-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleProductSelection(product.id)}
+                          className="h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                        />
+                      </div>
                     )}
                   </div>
-
-                  <div className="border-t pt-4">
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-xs text-gray-500">Preço unitário</p>
-                        <p className="font-semibold text-gray-900">{formatCurrency(product.sell_price || 0)}</p>
+                  
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">{product.name}</h3>
+                        <p className="text-sm text-gray-600 font-mono">{product.code}</p>
                       </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Valor total</p>
-                        <p className="font-semibold text-green-600">{formatCurrency(totalValue)}</p>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${stockStatus.color}`}>
+                        {stockStatus.status === 'low' ? 'Crítico' : stockStatus.status === 'medium' ? 'Baixo' : 'Adequado'}
+                      </span>
+                    </div>
+                    
+                    {/* Estoque com edição inline e botões rápidos */}
+                    <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">Estoque</span>
+                        {!isEditingQty && (
+                          <div className="flex items-center space-x-1">
+                            <button
+                              onClick={() => handleQuickStockAction(product, 'saida', 1)}
+                              className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                              title="Saída rápida (-1)"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleQuickStockAction(product, 'entrada', 1)}
+                              className="p-1 text-green-600 hover:bg-green-100 rounded transition-colors"
+                              title="Entrada rápida (+1)"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {isEditingQty ? (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            ref={(el) => quantityInputRefs.current[product.id] = el}
+                            type="number"
+                            min="0"
+                            defaultValue={editingQuantity[product.id]}
+                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            onBlur={(e) => {
+                              handleInlineQuantityEdit(product.id, parseInt(e.target.value) || 0)
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleInlineQuantityEdit(product.id, parseInt(e.currentTarget.value) || 0)
+                              } else if (e.key === 'Escape') {
+                                setEditingQuantity(prev => {
+                                  const newState = { ...prev }
+                                  delete newState[product.id]
+                                  return newState
+                                })
+                              }
+                            }}
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => {
+                              const input = quantityInputRefs.current[product.id]
+                              if (input) {
+                                handleInlineQuantityEdit(product.id, parseInt(input.value) || 0)
+                              }
+                            }}
+                            className="p-2 text-green-600 hover:bg-green-100 rounded-lg"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <button
+                            onClick={() => setEditingQuantity(prev => ({ ...prev, [product.id]: product.quantity || 0 }))}
+                            className="text-2xl font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
+                            title="Clique para editar"
+                          >
+                            {product.quantity || 0}
+                          </button>
+                          <span className="text-sm text-gray-500">/ mín {product.min_stock || 0}</span>
+                        </div>
+                      )}
+                      
+                      {/* Barra de progresso do estoque */}
+                      <div className="mt-3">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              stockStatus.status === 'low' ? 'bg-red-500' :
+                              stockStatus.status === 'medium' ? 'bg-orange-500' : 'bg-green-500'
+                            }`}
+                            style={{ width: `${Math.min((((product.quantity || 0) / ((product.min_stock || 1) * 2)) * 100), 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3 mb-4">
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Package className="h-4 w-4 mr-2 text-gray-400" />
+                        <span className="truncate">{product.category}</span>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600">
+                        <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                        <span className="font-mono">{product.location}</span>
                       </div>
                     </div>
 
-                    {/* Enhanced Progress Bar */}
-                    <div className="mb-4">
-                      <div className="flex justify-between text-xs text-gray-600 mb-2">
-                        <span>Nível do estoque</span>
-                        <span>{product.quantity}/{product.min_stock} mín.</span>
+                    <div className="border-t pt-4">
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs text-gray-500">Preço unitário</p>
+                          <p className="font-semibold text-gray-900">{formatCurrency(product.sell_price || 0)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Valor total</p>
+                          <p className="font-semibold text-green-600">{formatCurrency(totalValue)}</p>
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all duration-300 ${
-                            stockStatus.status === 'low' ? 'bg-red-500' :
-                            stockStatus.status === 'medium' ? 'bg-orange-500' : 'bg-green-500'
-                          }`}
-                          style={{ width: `${Math.min((((product.quantity || 0) / ((product.min_stock || 1) * 2)) * 100), 100)}%` }}
-                        ></div>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-gray-500 truncate flex-1 mr-2">
-                        {product.supplier || 'Sem fornecedor'}
-                      </p>
-                      <div className="flex space-x-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => handleViewProduct(product)}
-                          className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                          title="Ver detalhes"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleStockMovement(product)}
-                          className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
-                          title="Movimentar estoque"
-                        >
-                          <ArrowUpCircle className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDuplicateProduct(product)}
-                          className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
-                          title="Duplicar produto"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleEditProduct(product)}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                          title="Editar produto"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteProduct(product)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                          title="Excluir produto"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-gray-500 truncate flex-1 mr-2">
+                          {product.supplier || 'Sem fornecedor'}
+                        </p>
+                        <div className="flex space-x-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleViewProduct(product)}
+                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                            title="Ver detalhes"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleStockMovement(product)}
+                            className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
+                            title="Movimentar estoque"
+                          >
+                            <ArrowUpCircle className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDuplicateProduct(product)}
+                            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                            title="Duplicar produto"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleEditProduct(product)}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            title="Editar produto"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteProduct(product)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                            title="Excluir produto"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -818,12 +1160,12 @@ function ProductList({ searchTerm }: ProductListProps) {
         product={viewingProduct}
       />
 
-      {/* Stock Movement Modal */}
+      {/* Stock Movement Modal - Melhorado */}
       {isStockMovementModalOpen && stockMovementProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <ArrowUpCircle className="h-5 w-5 text-purple-600 mr-2" />
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+              <ArrowUpCircle className="h-6 w-6 text-purple-600 mr-3" />
               Movimentar Estoque - {stockMovementProduct.name}
             </h3>
             
@@ -845,11 +1187,11 @@ function ProductList({ searchTerm }: ProductListProps) {
               
               updateProduct(stockMovementProduct.id, { quantity: newQuantity })
               
-              // Simular histórico de movimentação (em uma aplicação real, isso seria salvo em um contexto separado)
-              const movement = {
-                id: Date.now(),
+              // Registrar no histórico
+              const movement: StockMovement = {
+                id: Date.now().toString(),
                 productId: stockMovementProduct.id,
-                type,
+                type: type as 'entrada' | 'saida',
                 quantity,
                 reason,
                 date: new Date().toISOString(),
@@ -857,69 +1199,255 @@ function ProductList({ searchTerm }: ProductListProps) {
                 newQuantity
               }
               
+              setMovementHistory(prev => [movement, ...prev.slice(0, 49)])
+              
               alert(`✅ Movimentação registrada!\n${type === 'entrada' ? 'Entrada' : 'Saída'} de ${quantity} unidades\nEstoque atual: ${newQuantity}`)
               handleCloseStockMovementModal()
             }}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tipo de Movimentação
-                  </label>
-                  <select name="type" required className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                    <option value="entrada">Entrada (Recebimento)</option>
-                    <option value="saida">Saída (Consumo/Uso)</option>
-                  </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Lado esquerdo - Formulário */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Tipo de Movimentação
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="flex items-center space-x-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-green-50 hover:border-green-300 transition-colors">
+                        <input
+                          type="radio"
+                          name="type"
+                          value="entrada"
+                          defaultChecked
+                          className="text-green-600 focus:ring-green-500"
+                        />
+                        <div className="flex items-center space-x-2">
+                          <ArrowUpCircle className="h-5 w-5 text-green-600" />
+                          <span className="font-medium text-gray-900">Entrada</span>
+                        </div>
+                      </label>
+                      <label className="flex items-center space-x-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-red-50 hover:border-red-300 transition-colors">
+                        <input
+                          type="radio"
+                          name="type"
+                          value="saida"
+                          className="text-red-600 focus:ring-red-500"
+                        />
+                        <div className="flex items-center space-x-2">
+                          <ArrowDownCircle className="h-5 w-5 text-red-600" />
+                          <span className="font-medium text-gray-900">Saída</span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Quantidade
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        name="quantity"
+                        min="1"
+                        required
+                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Digite a quantidade"
+                        autoFocus
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            const input = e.currentTarget.parentElement?.previousElementSibling as HTMLInputElement
+                            if (input) input.value = '1'
+                          }}
+                          className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                        >
+                          1
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            const input = e.currentTarget.parentElement?.previousElementSibling as HTMLInputElement
+                            if (input) input.value = '5'
+                          }}
+                          className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                        >
+                          5
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            const input = e.currentTarget.parentElement?.previousElementSibling as HTMLInputElement
+                            if (input) input.value = '10'
+                          }}
+                          className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                        >
+                          10
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Motivo/Observação
+                    </label>
+                    <textarea
+                      name="reason"
+                      rows={4}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="Ex: Recebimento de compra, Uso em produção, Ajuste de inventário..."
+                    />
+                    
+                    {/* Sugestões de motivos */}
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {[
+                        'Recebimento de compra',
+                        'Uso em produção',
+                        'Ajuste de inventário',
+                        'Venda',
+                        'Devolução',
+                        'Perda/Avaria'
+                      ].map(suggestion => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={(e) => {
+                            const textarea = e.currentTarget.parentElement?.previousElementSibling as HTMLTextAreaElement
+                            if (textarea) textarea.value = suggestion
+                          }}
+                          className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Quantidade
-                  </label>
-                  <input
-                    type="number"
-                    name="quantity"
-                    min="1"
-                    required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Digite a quantidade"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Motivo/Observação
-                  </label>
-                  <textarea
-                    name="reason"
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Ex: Recebimento de compra, Uso em produção, Ajuste de inventário..."
-                  />
-                </div>
-                
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="text-sm text-gray-600">
-                    <strong>Estoque atual:</strong> {stockMovementProduct.quantity || 0} unidades
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <strong>Estoque mínimo:</strong> {stockMovementProduct.min_stock || 0} unidades
-                  </p>
+                {/* Lado direito - Informações do produto */}
+                <div className="space-y-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-3">Informações do Produto</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Código:</span>
+                        <span className="font-mono text-gray-900">{stockMovementProduct.code}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Categoria:</span>
+                        <span className="text-gray-900">{stockMovementProduct.category}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Localização:</span>
+                        <span className="font-mono text-gray-900">{stockMovementProduct.location}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Fornecedor:</span>
+                        <span className="text-gray-900">{stockMovementProduct.supplier || 'Não informado'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                    <h4 className="font-medium text-blue-900 mb-3 flex items-center">
+                      <Package className="h-4 w-4 mr-2" />
+                      Status do Estoque
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-blue-700">Estoque atual:</span>
+                        <span className="font-bold text-blue-900">{stockMovementProduct.quantity || 0} unidades</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-blue-700">Estoque mínimo:</span>
+                        <span className="font-bold text-blue-900">{stockMovementProduct.min_stock || 0} unidades</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-blue-700">Status:</span>
+                        <span className={`font-medium ${
+                          (stockMovementProduct.quantity || 0) <= (stockMovementProduct.min_stock || 1)
+                            ? 'text-red-600'
+                            : (stockMovementProduct.quantity || 0) <= (stockMovementProduct.min_stock || 1) * 1.5
+                            ? 'text-orange-600'
+                            : 'text-green-600'
+                        }`}>
+                          {(stockMovementProduct.quantity || 0) <= (stockMovementProduct.min_stock || 1)
+                            ? 'Crítico'
+                            : (stockMovementProduct.quantity || 0) <= (stockMovementProduct.min_stock || 1) * 1.5
+                            ? 'Baixo'
+                            : 'Adequado'
+                          }
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Barra de progresso */}
+                    <div className="mt-3">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            (stockMovementProduct.quantity || 0) <= (stockMovementProduct.min_stock || 1)
+                              ? 'bg-red-500'
+                              : (stockMovementProduct.quantity || 0) <= (stockMovementProduct.min_stock || 1) * 1.5
+                              ? 'bg-orange-500'
+                              : 'bg-green-500'
+                          }`}
+                          style={{ 
+                            width: `${Math.min((((stockMovementProduct.quantity || 0) / ((stockMovementProduct.min_stock || 1) * 2)) * 100), 100)}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Movimentações recentes */}
+                  {movementHistory.filter(m => m.productId === stockMovementProduct.id).length > 0 && (
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                        <History className="h-4 w-4 mr-2" />
+                        Movimentações Recentes
+                      </h4>
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {movementHistory
+                          .filter(m => m.productId === stockMovementProduct.id)
+                          .slice(0, 3)
+                          .map(movement => (
+                            <div key={movement.id} className="flex items-center justify-between text-xs">
+                              <div className="flex items-center space-x-2">
+                                <div className={`w-2 h-2 rounded-full ${
+                                  movement.type === 'entrada' ? 'bg-green-500' : 'bg-red-500'
+                                }`}></div>
+                                <span className="text-gray-600">
+                                  {movement.type === 'entrada' ? '+' : '-'}{movement.quantity}
+                                </span>
+                              </div>
+                              <span className="text-gray-500">
+                                {new Date(movement.date).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               
-              <div className="mt-6 flex justify-end space-x-3">
+              <div className="mt-8 flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={handleCloseStockMovementModal}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
                 >
-                  Registrar Movimentação
+                  <Check className="h-4 w-4" />
+                  <span>Registrar Movimentação</span>
                 </button>
               </div>
             </form>
