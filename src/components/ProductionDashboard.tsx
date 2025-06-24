@@ -386,7 +386,7 @@ function ProductionDashboard({ onAddFinishedProduct }: ProductionDashboardProps)
             message: `Comprar ${missing.needed - missing.available} unidades de ${component.name} para produzir ${product.name}`,
             componentId: missing.componentId
           })
-        }
+    }
       })
 
       if (analysis.profitMargin < 10) {
@@ -924,6 +924,6 @@ function ProductionDashboard({ onAddFinishedProduct }: ProductionDashboardProps)
       />
     </div>
   )
-}
+} 
 
 export default memo(ProductionDashboard) 

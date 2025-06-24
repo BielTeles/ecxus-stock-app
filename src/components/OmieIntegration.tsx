@@ -139,13 +139,73 @@ export default function OmieIntegration({ isOpen, onClose }: OmieIntegrationProp
 
     try {
       const api = new OmieAPI(credentials)
-      const products = await api.getActiveProducts()
+      
+      // Tentar diferentes abordagens de busca
+      setSyncLog(prev => [...prev, '🔍 Tentativa 1: Busca básica...'])
+      let products = await api.getActiveProducts()
+      
+      if (products.length === 0) {
+        setSyncLog(prev => [...prev, '⚠️ Nenhum produto encontrado na busca básica'])
+        setSyncLog(prev => [...prev, '�� Tentativa 2: Busca sem filtros...'])
+        
+        try {
+          const noFilterResponse = await api.listProducts(1, 50)
+          if (noFilterResponse.produto_servico_cadastro) {
+            products = noFilterResponse.produto_servico_cadastro
+          }
+        } catch (error) {
+          setSyncLog(prev => [...prev, `❌ Erro na busca sem filtros: ${error instanceof Error ? error.message : 'Erro desconhecido'}`])
+        }
+      }
+      
+      if (products.length === 0) {
+        setSyncLog(prev => [...prev, '⚠️ Nenhum produto encontrado na busca sem filtros'])
+        setSyncLog(prev => [...prev, '🔍 Tentativa 3: Busca por descrição...'])
+        
+        try {
+          const searchResponse = await api.searchProductsByDescription('produto', 1, 50)
+          if (searchResponse.produto_servico_cadastro) {
+            products = searchResponse.produto_servico_cadastro
+          }
+        } catch (error) {
+          setSyncLog(prev => [...prev, `❌ Erro na busca por descrição: ${error instanceof Error ? error.message : 'Erro desconhecido'}`])
+        }
+      }
+      
+      console.log('🔍 Debug - Produtos encontrados:', {
+        total: products.length,
+        sample: products.slice(0, 3).map(p => ({
+          codigo: p.codigo_produto,
+          descricao: p.descricao,
+          inativo: p.inativo,
+          bloqueado: p.bloqueado
+        }))
+      })
       
       setOmieProducts(products)
       setShowPreview(true)
-      setSyncLog(prev => [...prev, `✅ ${products.length} produtos encontrados no Omie`])
+      
+      if (products.length === 0) {
+        setSyncLog(prev => [
+          ...prev, 
+          '⚠️ Nenhum produto encontrado após todas as tentativas',
+          '💡 Possíveis causas:',
+          '   - Problema de permissões da aplicação no OMIE',
+          '   - Produtos não estão no escopo da aplicação',
+          '   - Configuração incorreta da API',
+          '   - Necessário configurar permissões específicas',
+          '🔍 Execute o teste avançado no console para mais detalhes'
+        ])
+      } else {
+        setSyncLog(prev => [...prev, `✅ ${products.length} produtos encontrados no Omie`])
+      }
     } catch (error) {
-      setSyncLog(prev => [...prev, `❌ Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`])
+      console.error('❌ Erro ao buscar produtos:', error)
+      setSyncLog(prev => [
+        ...prev, 
+        `❌ Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+        '🔍 Verifique o console do navegador para mais detalhes'
+      ])
     } finally {
       setIsSyncing(false)
     }

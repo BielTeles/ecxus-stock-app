@@ -1,31 +1,8 @@
-// API de Integração com ERP Omie
+// API de Integração com ERP Omie - Versão Limpa
 export interface OmieCredentials {
   appKey: string
   appSecret: string
   baseUrl?: string
-}
-
-export interface OmieProduct {
-  codigo_produto: string
-  codigo_produto_integracao?: string
-  descricao: string
-  unidade: string
-  ncm?: string
-  peso_liq?: number
-  peso_bruto?: number
-  altura?: number
-  largura?: number
-  profundidade?: number
-  marca?: string
-  valor_unitario?: number
-  codigo_familia?: string
-  descricao_familia?: string
-  codigo_subfamilia?: string
-  descricao_subfamilia?: string
-  inativo?: 'S' | 'N'
-  dadosAdicionais?: {
-    [key: string]: any
-  }
 }
 
 export interface OmieProductResponse {
@@ -158,79 +135,11 @@ export class OmieAPI {
     }
   }
 
-  // Listar produtos do Omie
+  // Listar produtos do Omie (apenas parâmetros básicos que funcionam)
   async listProducts(page: number = 1, recordsPerPage: number = 50): Promise<OmieListResponse> {
     const params = [{
       pagina: page,
       registros_por_pagina: recordsPerPage
-    }]
-
-    return this.makeRequest<OmieListResponse>('ListarProdutos', params)
-  }
-
-  // Listar produtos com diferentes filtros
-  async listProductsWithFilters(page: number = 1, recordsPerPage: number = 50, filters: any = {}): Promise<OmieListResponse> {
-    const params = [{
-      pagina: page,
-      registros_por_pagina: recordsPerPage,
-      ...filters
-    }]
-
-    return this.makeRequest<OmieListResponse>('ListarProdutos', params)
-  }
-
-  // Listar produtos por descrição
-  async searchProductsByDescription(descricao: string, page: number = 1, recordsPerPage: number = 50): Promise<OmieListResponse> {
-    const params = [{
-      pagina: page,
-      registros_por_pagina: recordsPerPage,
-      descricao: descricao
-    }]
-
-    return this.makeRequest<OmieListResponse>('ListarProdutos', params)
-  }
-
-  // Listar produtos por código de família
-  async listProductsByFamily(codigo_familia: string, page: number = 1, recordsPerPage: number = 50): Promise<OmieListResponse> {
-    const params = [{
-      pagina: page,
-      registros_por_pagina: recordsPerPage,
-      codigo_familia: codigo_familia
-    }]
-
-    return this.makeRequest<OmieListResponse>('ListarProdutos', params)
-  }
-
-  // Listar produtos por código de subfamília
-  async listProductsBySubFamily(codigo_subfamilia: string, page: number = 1, recordsPerPage: number = 50): Promise<OmieListResponse> {
-    const params = [{
-      pagina: page,
-      registros_por_pagina: recordsPerPage,
-      codigo_subfamilia: codigo_subfamilia
-    }]
-
-    return this.makeRequest<OmieListResponse>('ListarProdutos', params)
-  }
-
-  // Listar produtos por tipo
-  async listProductsByType(tipo: 'P' | 'S' = 'P', page: number = 1, recordsPerPage: number = 50): Promise<OmieListResponse> {
-    const params = [{
-      pagina: page,
-      registros_por_pagina: recordsPerPage,
-      apenas_importado_api: 'N',
-      tipo: tipo // P = Produto, S = Serviço
-    }]
-
-    return this.makeRequest<OmieListResponse>('ListarProdutos', params)
-  }
-
-  // Listar produtos por situação
-  async listProductsByStatus(situacao: 'A' | 'I' = 'A', page: number = 1, recordsPerPage: number = 50): Promise<OmieListResponse> {
-    const params = [{
-      pagina: page,
-      registros_por_pagina: recordsPerPage,
-      apenas_importado_api: 'N',
-      situacao: situacao // A = Ativo, I = Inativo
     }]
 
     return this.makeRequest<OmieListResponse>('ListarProdutos', params)

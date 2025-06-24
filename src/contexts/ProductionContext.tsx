@@ -203,10 +203,10 @@ export function ProductionProvider({ children }: { children: ReactNode }) {
     finishedProducts.forEach(product => {
       if (!product.bom || !Array.isArray(product.bom)) return
       
-            product.bom.forEach(bomItem => {
-        const current = componentUsage.get(bomItem.componentId) || 0
-        componentUsage.set(bomItem.componentId, current + 1)
-      })
+        product.bom.forEach(bomItem => {
+          const current = componentUsage.get(bomItem.componentId) || 0
+          componentUsage.set(bomItem.componentId, current + 1)
+        })
     })
 
     const mostUsedComponents = Array.from(componentUsage.entries())

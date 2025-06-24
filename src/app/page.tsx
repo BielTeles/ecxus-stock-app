@@ -165,18 +165,18 @@ export default function Home() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'dashboard' && (
-          <Dashboard 
-            onAddProduct={() => setIsAddModalOpen(true)}
-            onSwitchToProducts={() => setActiveTab('products')}
-          />
+            <Dashboard 
+              onAddProduct={() => setIsAddModalOpen(true)}
+              onSwitchToProducts={() => setActiveTab('products')}
+            />
         )}
         {activeTab === 'products' && (
-          <ProductList searchTerm={searchTerm} />
+            <ProductList searchTerm={searchTerm} />
         )}
         {activeTab === 'production' && (
-          <ProductionDashboard 
-            onAddFinishedProduct={() => setIsAddFinishedProductModalOpen(true)}
-          />
+            <ProductionDashboard 
+              onAddFinishedProduct={() => setIsAddFinishedProductModalOpen(true)}
+            />
         )}
         {activeTab === 'orders' && (
           <div className="space-y-6">
